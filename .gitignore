@@ -12,12 +12,12 @@
 /.zed
 /bootstrap/ssr
 /node_modules
-/public/build
+# /public/build
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+# /vendor
 auth.json
 Homestead.json
 Homestead.yaml
