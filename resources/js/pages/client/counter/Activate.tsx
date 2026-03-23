@@ -99,25 +99,25 @@ function ScanLines() {
         "bottom-0 right-0 border-b-2 border-r-2 rounded-br-lg",
       ].map((cls, i) => (
         <div key={i} className={`absolute w-5 h-5 ${cls}`}
-          style={{ borderColor: "#00ff88" }} />
+          style={{ borderColor: "#b98951" }} />
       ))}
       <motion.div
         className="absolute left-2 right-2 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, #00ff88, transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, #b98951, transparent)" }}
         animate={{ top: ["12%", "88%", "12%"] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ duration: 2, repeat: Infinity }}>
         <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="3" width="7" height="7" rx="1" stroke="#00ff88" strokeWidth="1.5" />
-          <rect x="5" y="5" width="3" height="3" fill="#00ff88" />
-          <rect x="14" y="3" width="7" height="7" rx="1" stroke="#00ff88" strokeWidth="1.5" />
-          <rect x="16" y="5" width="3" height="3" fill="#00ff88" />
-          <rect x="3" y="14" width="7" height="7" rx="1" stroke="#00ff88" strokeWidth="1.5" />
-          <rect x="5" y="16" width="3" height="3" fill="#00ff88" />
+          <rect x="3" y="3" width="7" height="7" rx="1" stroke="#b98951" strokeWidth="1.5" />
+          <rect x="5" y="5" width="3" height="3" fill="#b98951" />
+          <rect x="14" y="3" width="7" height="7" rx="1" stroke="#b98951" strokeWidth="1.5" />
+          <rect x="16" y="5" width="3" height="3" fill="#b98951" />
+          <rect x="3" y="14" width="7" height="7" rx="1" stroke="#b98951" strokeWidth="1.5" />
+          <rect x="5" y="16" width="3" height="3" fill="#b98951" />
           <path d="M14 14h2v2h-2zM18 14h3v1h-3zM14 17h1v3h-1zM17 17h1v1h-1zM19 17h2v2h-2zM16 20h5v1h-5z"
-            fill="#00ff88" />
+            fill="#b98951" />
         </svg>
       </motion.div>
     </div>
@@ -130,7 +130,7 @@ function SuccessBurst() {
     <div className="relative flex items-center justify-center w-28 h-28">
       {[0, 1, 2].map(i => (
         <motion.div key={i} className="absolute rounded-full"
-          style={{ border: "2px solid #00ff88" }}
+          style={{ border: "2px solid #b98951" }}
           initial={{ width: 40, height: 40, opacity: 0.8 }}
           animate={{ width: 120, height: 120, opacity: 0 }}
           transition={{ duration: 1.2, delay: i * 0.3, repeat: Infinity }}
@@ -141,8 +141,8 @@ function SuccessBurst() {
         transition={{ type: "spring", stiffness: 300, damping: 18 }}
         className="relative z-10 w-20 h-20 rounded-full flex items-center justify-center"
         style={{
-          background: "rgba(0,255,136,0.12)", border: "2px solid #00ff88",
-          fontSize: "30px", color: "#00ff88"
+          background: "rgba(185,137,81,0.12)", border: "2px solid #b98951",
+          fontSize: "30px", color: "#b98951"
         }}>
         ✓
       </motion.div>
@@ -375,22 +375,22 @@ export default function ServicerActivation() {
 
   return (
     <>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-      {/* Mobile-first dark phone screen */}
+      {/* Mobile-first warm cream screen */}
       <div className="min-h-screen w-full flex flex-col relative overflow-hidden"
-        style={{ background: "#080e1a", maxWidth: "420px", margin: "0 auto" }}>
+        style={{ background: "#f8f1e8", maxWidth: "420px", margin: "0 auto" }}>
 
         {/* Ambient glows */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
           <div className="absolute top-[-10%] left-[10%] w-56 h-56 rounded-full opacity-20"
-            style={{ background: "radial-gradient(circle,#00ff88,transparent 70%)", filter: "blur(50px)" }} />
+            style={{ background: "radial-gradient(circle,#d4a574,transparent 70%)", filter: "blur(50px)" }} />
           <div className="absolute bottom-[-10%] right-[10%] w-44 h-44 rounded-full opacity-10"
-            style={{ background: "radial-gradient(circle,#3b82f6,transparent 70%)", filter: "blur(40px)" }} />
+            style={{ background: "radial-gradient(circle,#b98951,transparent 70%)", filter: "blur(40px)" }} />
           <div className="absolute inset-0 opacity-[0.04]"
             style={{
-              backgroundImage: `linear-gradient(rgba(0,255,136,.4) 1px,transparent 1px),
-                      linear-gradient(90deg,rgba(0,255,136,.4) 1px,transparent 1px)`,
+              backgroundImage: `linear-gradient(rgba(90,62,37,.4) 1px,transparent 1px),
+                      linear-gradient(90deg,rgba(90,62,37,.4) 1px,transparent 1px)`,
               backgroundSize: "40px 40px"
             }} />
         </div>
@@ -398,18 +398,18 @@ export default function ServicerActivation() {
         {/* Logo bar */}
         <div className="relative z-10 flex items-center justify-between px-7 pt-10 pb-2">
           <span style={{
-            fontFamily: "'Syne', sans-serif", fontSize: "15px",
-            fontWeight: 800, color: "#00ff88", letterSpacing: "0.05em"
+            fontFamily: "'Cormorant Garamond', serif", fontSize: "15px",
+            fontWeight: 800, color: "#5a4634", letterSpacing: "0.05em"
           }}>
-            FEEDBACK<span style={{ color: "rgba(255,255,255,0.3)" }}>PRO</span>
+            FEEDBACK<span style={{ color: "rgba(90,62,37,0.3)" }}>PRO</span>
           </span>
           <div className="flex items-center gap-2 px-3 py-1 rounded-full"
-            style={{ background: "rgba(0,255,136,0.08)", border: "1px solid rgba(0,255,136,0.2)" }}>
+            style={{ background: "rgba(185,137,81,0.08)", border: "1px solid rgba(185,137,81,0.2)" }}>
             <div className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "#00ff88", boxShadow: "0 0 6px #00ff88", animation: "pulse 2s infinite" }} />
+              style={{ background: "#b98951", boxShadow: "0 0 6px #b98951", animation: "pulse 2s infinite" }} />
             <span style={{
               fontFamily: "'DM Mono', monospace", fontSize: "10px",
-              color: "#00ff88", letterSpacing: "0.08em"
+              color: "#7a6345", letterSpacing: "0.08em"
             }}>SECURE</span>
           </div>
         </div>
@@ -419,21 +419,21 @@ export default function ServicerActivation() {
           <AnimatePresence mode="wait">
 
             {/* ── Loading ── */}
-            {pageState === "loading" && (
+            {(pageState === "loading") && (
               <motion.div key="loading"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center gap-7 text-center">
                 <ScanLines />
                 <div>
                   <p style={{
-                    fontFamily: "'Syne', sans-serif", fontSize: "20px",
-                    fontWeight: 700, color: "#f8fafc", marginBottom: "8px"
+                    fontFamily: "'Cormorant Garamond', serif", fontSize: "24px",
+                    fontWeight: 700, color: "#3d2c1e", marginBottom: "8px"
                   }}>
                     Verifying Counter
                   </p>
                   <p style={{
                     fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
-                    color: "rgba(248,250,252,0.4)"
+                    color: "#8f5f35"
                   }}>
                     Please wait...
                   </p>
@@ -454,35 +454,35 @@ export default function ServicerActivation() {
                   transition={{ delay: 0.1 }}
                   className="rounded-2xl p-5 relative overflow-hidden"
                   style={{
-                    background: "rgba(0,255,136,0.06)",
-                    border: "1px solid rgba(0,255,136,0.2)"
+                    background: "rgba(185,137,81,0.08)",
+                    border: "1px solid rgba(185,137,81,0.2)"
                   }}>
                   <div className="absolute top-0 right-0 w-24 h-24 opacity-15 pointer-events-none"
                     style={{
-                      background: "radial-gradient(circle,#00ff88,transparent 70%)",
+                      background: "radial-gradient(circle,#b98951,transparent 70%)",
                       filter: "blur(16px)"
                     }} />
                   <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-2 h-2 rounded-full"
-                        style={{ background: "#00ff88", boxShadow: "0 0 6px #00ff88" }} />
+                        style={{ background: "#b98951", boxShadow: "0 0 6px #b98951" }} />
                       <span style={{
                         fontFamily: "'DM Mono', monospace", fontSize: "10px",
-                        color: "#00ff88", letterSpacing: "0.08em", textTransform: "uppercase"
+                        color: "#8f5f35", letterSpacing: "0.08em", textTransform: "uppercase"
                       }}>
                         Activating
                       </span>
                     </div>
                     <p style={{
-                      fontFamily: "'Syne', sans-serif", fontSize: "28px",
-                      fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em",
+                      fontFamily: "'Cormorant Garamond', serif", fontSize: "32px",
+                      fontWeight: 700, color: "#3d2c1e", letterSpacing: "-0.02em",
                       marginBottom: "3px"
                     }}>
                       {counter.name}
                     </p>
                     <p style={{
                       fontFamily: "'DM Sans', sans-serif", fontSize: "14px",
-                      color: "rgba(248,250,252,0.5)"
+                      color: "#8f5f35"
                     }}>
                       {counter.branch_name}
                     </p>
@@ -492,15 +492,15 @@ export default function ServicerActivation() {
                 {/* Heading */}
                 <div>
                   <h1 style={{
-                    fontFamily: "'Syne', sans-serif", fontSize: "24px",
-                    fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em",
+                    fontFamily: "'Cormorant Garamond', serif", fontSize: "28px",
+                    fontWeight: 700, color: "#3d2c1e", letterSpacing: "-0.02em",
                     marginBottom: "6px"
                   }}>
                     Sign in to activate
                   </h1>
                   <p style={{
                     fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
-                    color: "rgba(248,250,252,0.4)", lineHeight: 1.5
+                    color: "#8f5f35", lineHeight: 1.5
                   }}>
                     Use your staff account credentials.
                     You must be assigned to {counter.branch_name}.
@@ -511,7 +511,7 @@ export default function ServicerActivation() {
                 <div>
                   <label style={{
                     fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
-                    fontWeight: 600, color: "rgba(248,250,252,0.7)",
+                    fontWeight: 600, color: "#5a4634",
                     display: "block", marginBottom: "7px"
                   }}>
                     Email address
@@ -526,10 +526,10 @@ export default function ServicerActivation() {
                     onKeyDown={e => e.key === "Enter" && handleLogin()}
                     style={{
                       width: "100%", padding: "12px 14px", borderRadius: 12,
-                      border: `1.5px solid ${fieldErrors.email ? "#ef4444" : "rgba(248,250,252,0.12)"}`,
-                      background: fieldErrors.email ? "rgba(239,68,68,0.08)" : "rgba(248,250,252,0.06)",
+                      border: `1.5px solid ${fieldErrors.email ? "#c85a54" : "rgba(185,137,81,0.25)"}`,
+                      background: fieldErrors.email ? "rgba(200,90,84,0.08)" : "rgba(255,255,255,0.5)",
                       fontFamily: "'DM Sans', sans-serif", fontSize: "14px",
-                      color: "#f8fafc", outline: "none",
+                      color: "#4c3829", outline: "none",
                       transition: "border-color 0.2s",
                     }}
                   />
@@ -539,7 +539,7 @@ export default function ServicerActivation() {
                         exit={{ opacity: 0 }}
                         style={{
                           fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
-                          color: "#ef4444", marginTop: "5px"
+                          color: "#c85a54", marginTop: "5px"
                         }}>
                         {fieldErrors.email}
                       </motion.p>
@@ -551,7 +551,7 @@ export default function ServicerActivation() {
                 <div>
                   <label style={{
                     fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
-                    fontWeight: 600, color: "rgba(248,250,252,0.7)",
+                    fontWeight: 600, color: "#5a4634",
                     display: "block", marginBottom: "7px"
                   }}>
                     Password
@@ -567,17 +567,17 @@ export default function ServicerActivation() {
                       onKeyDown={e => e.key === "Enter" && handleLogin()}
                       style={{
                         width: "100%", padding: "12px 44px 12px 14px", borderRadius: 12,
-                        border: `1.5px solid ${fieldErrors.password ? "#ef4444" : "rgba(248,250,252,0.12)"}`,
-                        background: fieldErrors.password ? "rgba(239,68,68,0.08)" : "rgba(248,250,252,0.06)",
+                        border: `1.5px solid ${fieldErrors.password ? "#c85a54" : "rgba(185,137,81,0.25)"}`,
+                        background: fieldErrors.password ? "rgba(200,90,84,0.08)" : "rgba(255,255,255,0.5)",
                         fontFamily: "'DM Sans', sans-serif", fontSize: "14px",
-                        color: "#f8fafc", outline: "none",
+                        color: "#4c3829", outline: "none",
                       }}
                     />
                     <button type="button" onClick={() => setShowPass(p => !p)}
                       style={{
                         position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
                         background: "none", border: "none", cursor: "pointer",
-                        color: "rgba(248,250,252,0.4)", fontSize: "15px", padding: 0
+                        color: "#9e8563", fontSize: "15px", padding: 0
                       }}>
                       {showPass ? "🙈" : "👁"}
                     </button>
@@ -588,7 +588,7 @@ export default function ServicerActivation() {
                         exit={{ opacity: 0 }}
                         style={{
                           fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
-                          color: "#ef4444", marginTop: "5px"
+                          color: "#c85a54", marginTop: "5px"
                         }}>
                         {fieldErrors.password}
                       </motion.p>
@@ -604,11 +604,11 @@ export default function ServicerActivation() {
                   disabled={pageState === "submitting"}
                   style={{
                     width: "100%", padding: "15px", borderRadius: 16, border: "none",
-                    background: pageState === "submitting" ? "rgba(0,255,136,0.3)" : "#00ff88",
-                    color: "#080e1a",
-                    fontFamily: "'Syne', sans-serif", fontSize: "15px", fontWeight: 800,
+                    background: pageState === "submitting" ? "rgba(185,137,81,0.3)" : "#b98951",
+                    color: "#ffffff",
+                    fontFamily: "'Cormorant Garamond', serif", fontSize: "16px", fontWeight: 700,
                     cursor: pageState === "submitting" ? "not-allowed" : "pointer",
-                    boxShadow: pageState === "submitting" ? "none" : "0 8px 32px rgba(0,255,136,0.35)",
+                    boxShadow: pageState === "submitting" ? "none" : "0 8px 32px rgba(185,137,81,0.3)",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     letterSpacing: "-0.01em",
                   }}
@@ -617,7 +617,7 @@ export default function ServicerActivation() {
                     <>
                       <div style={{
                         width: 16, height: 16, borderRadius: "50%",
-                        border: "2px solid rgba(8,14,26,0.4)", borderTopColor: "#080e1a",
+                        border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#ffffff",
                         animation: "spin .7s linear infinite"
                       }} />
                       Signing in...
@@ -637,15 +637,15 @@ export default function ServicerActivation() {
                 <SuccessBurst />
                 <div>
                   <p style={{
-                    fontFamily: "'Syne', sans-serif", fontSize: "26px",
-                    fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em",
+                    fontFamily: "'Cormorant Garamond', serif", fontSize: "32px",
+                    fontWeight: 700, color: "#3d2c1e", letterSpacing: "-0.02em",
                     marginBottom: "8px"
                   }}>
                     Session Active!
                   </p>
                   <p style={{
                     fontFamily: "'DM Sans', sans-serif", fontSize: "14px",
-                    color: "rgba(248,250,252,0.5)", lineHeight: 1.6
+                    color: "#8f5f35", lineHeight: 1.6
                   }}>
                     {servicerName && <>{servicerName} · </>}
                     {counter?.name} · {counter?.branch_name}<br />
@@ -654,27 +654,27 @@ export default function ServicerActivation() {
                 </div>
                 <div className="w-full rounded-2xl p-4"
                   style={{
-                    background: "rgba(0,255,136,0.06)",
-                    border: "1px solid rgba(0,255,136,0.15)"
+                    background: "rgba(185,137,81,0.08)",
+                    border: "1px solid rgba(185,137,81,0.15)"
                   }}>
                   <div className="flex justify-between items-center mb-2">
                     <span style={{
                       fontFamily: "'DM Mono', monospace", fontSize: "10px",
-                      color: "rgba(248,250,252,0.35)", letterSpacing: "0.06em"
+                      color: "#9e8563", letterSpacing: "0.06em"
                     }}>COUNTER</span>
                     <span style={{
                       fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
-                      color: "#f8fafc", fontWeight: 500
+                      color: "#4c3829", fontWeight: 500
                     }}>{counter.name}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span style={{
                       fontFamily: "'DM Mono', monospace", fontSize: "10px",
-                      color: "rgba(248,250,252,0.35)", letterSpacing: "0.06em"
+                      color: "#9e8563", letterSpacing: "0.06em"
                     }}>STARTED</span>
                     <span style={{
                       fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
-                      color: "#00ff88", fontWeight: 500
+                      color: "#b98951", fontWeight: 500
                     }}>
                       {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}
                     </span>
@@ -682,7 +682,7 @@ export default function ServicerActivation() {
                 </div>
                 <p style={{
                   fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
-                  color: "rgba(248,250,252,0.25)", textAlign: "center"
+                  color: "#9e8563", textAlign: "center"
                 }}>
                   You can close this page. The counter is now live.
                 </p>
@@ -692,10 +692,10 @@ export default function ServicerActivation() {
                   onClick={handleLogout}
                   disabled={isLoggingOut}
                   style={{
-                    width: "100%", padding: "12px", borderRadius: 12, border: "1px solid rgba(239,68,68,0.5)",
-                    background: isLoggingOut ? "rgba(239,68,68,0.2)" : "transparent",
-                    color: "#ef4444",
-                    fontFamily: "'Syne', sans-serif", fontSize: "14px", fontWeight: 700,
+                    width: "100%", padding: "12px", borderRadius: 12, border: "1px solid rgba(200,90,84,0.4)",
+                    background: isLoggingOut ? "rgba(200,90,84,0.15)" : "transparent",
+                    color: "#c85a54",
+                    fontFamily: "'Cormorant Garamond', serif", fontSize: "15px", fontWeight: 700,
                     cursor: isLoggingOut ? "not-allowed" : "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     letterSpacing: "-0.01em",
@@ -706,7 +706,7 @@ export default function ServicerActivation() {
                     <>
                       <div style={{
                         width: 14, height: 14, borderRadius: "50%",
-                        border: "2px solid rgba(239,68,68,0.4)", borderTopColor: "#ef4444",
+                        border: "2px solid rgba(200,90,84,0.4)", borderTopColor: "#c85a54",
                         animation: "spin .7s linear infinite"
                       }} />
                       Logging out...
@@ -735,14 +735,14 @@ export default function ServicerActivation() {
                   </motion.div>
                   <div>
                     <p style={{
-                      fontFamily: "'Syne', sans-serif", fontSize: "20px",
-                      fontWeight: 800, color: "#f8fafc", marginBottom: "6px"
+                      fontFamily: "'Cormorant Garamond', serif", fontSize: "24px",
+                      fontWeight: 700, color: "#3d2c1e", marginBottom: "6px"
                     }}>
                       Counter Occupied
                     </p>
                     <p style={{
                       fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
-                      color: "rgba(248,250,252,0.4)", lineHeight: 1.6
+                      color: "#8f5f35", lineHeight: 1.6
                     }}>
                       This counter is currently in use.<br />
                       Pick another counter below.
@@ -754,7 +754,7 @@ export default function ServicerActivation() {
                   <div className="flex flex-col gap-3">
                     <p style={{
                       fontFamily: "'DM Mono', monospace", fontSize: "10px",
-                      color: "rgba(248,250,252,0.35)", letterSpacing: "0.08em",
+                      color: "#9e8563", letterSpacing: "0.08em",
                       textTransform: "uppercase"
                     }}>
                       Available counters
@@ -767,32 +767,32 @@ export default function ServicerActivation() {
                         onClick={() => handlePickCounter(ic)}
                         className="w-full p-4 rounded-2xl text-left flex items-center justify-between"
                         style={{
-                          background: "rgba(0,255,136,0.05)",
-                          border: "1px solid rgba(0,255,136,0.15)", cursor: "pointer"
+                          background: "rgba(185,137,81,0.08)",
+                          border: "1px solid rgba(185,137,81,0.15)", cursor: "pointer"
                         }}>
                         <div>
                           <p style={{
-                            fontFamily: "'Syne', sans-serif", fontSize: "15px",
-                            fontWeight: 700, color: "#f8fafc", marginBottom: "2px"
+                            fontFamily: "'Cormorant Garamond', serif", fontSize: "16px",
+                            fontWeight: 700, color: "#3d2c1e", marginBottom: "2px"
                           }}>
                             {ic.name}
                           </p>
                           {ic.description && (
                             <p style={{
                               fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
-                              color: "rgba(248,250,252,0.4)"
+                              color: "#8f5f35"
                             }}>
                               {ic.description}
                             </p>
                           )}
                         </div>
-                        <span style={{ color: "#00ff88", fontSize: "18px" }}>→</span>
+                        <span style={{ color: "#b98951", fontSize: "18px" }}>→</span>
                       </motion.button>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-6"
-                    style={{ color: "rgba(248,250,252,0.35)" }}>
+                    style={{ color: "#9e8563" }}>
                     <p style={{ fontSize: "28px", marginBottom: "8px" }}>😔</p>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px" }}>
                       No other counters available.
@@ -813,21 +813,21 @@ export default function ServicerActivation() {
                   className="w-18 h-18 rounded-full flex items-center justify-center text-3xl"
                   style={{
                     width: 72, height: 72,
-                    background: "rgba(239,68,68,0.12)",
-                    border: "2px solid rgba(239,68,68,0.35)", color: "#ef4444"
+                    background: "rgba(200,90,84,0.12)",
+                    border: "2px solid rgba(200,90,84,0.35)", color: "#c85a54"
                   }}>
                   ✕
                 </motion.div>
                 <div>
                   <p style={{
-                    fontFamily: "'Syne', sans-serif", fontSize: "20px",
-                    fontWeight: 800, color: "#f8fafc", marginBottom: "8px"
+                    fontFamily: "'Cormorant Garamond', serif", fontSize: "24px",
+                    fontWeight: 700, color: "#3d2c1e", marginBottom: "8px"
                   }}>
                     Invalid QR Code
                   </p>
                   <p style={{
                     fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
-                    color: "rgba(248,250,252,0.4)", lineHeight: 1.6
+                    color: "#8f5f35", lineHeight: 1.6
                   }}>
                     {errorMsg}
                   </p>

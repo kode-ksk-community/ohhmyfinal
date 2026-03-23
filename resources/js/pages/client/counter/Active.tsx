@@ -402,82 +402,96 @@ function IdleScreen({
                     transition={{ duration: 0.6 }}
                     className="relative z-10 flex items-center justify-between px-10 pt-8"
                 >
-                    <div className="flex items-center gap-3">
-                        <motion.div
-                            animate={{
-                                opacity: connectionError ? [1, 0.2, 1] : 1,
-                            }}
-                            transition={{
-                                duration: 1.5,
-                                repeat: connectionError ? Infinity : 0,
-                            }}
-                            className="w-2 h-2 rounded-full"
-                            style={{
-                                background: connectionError ? "#ef4444" : "#fbbf24",
-                            }}
-                        />
-                        <span
-                            style={{
-                                fontFamily: "'DM Mono', monospace",
-                                fontSize: "12px",
-                                color: "#b48c64",
-                            }}
-                        >
-                            {deviceInfo?.branchName ?? "—"}
-                        </span>
-                        <span style={{ color: "#d4b896" }}>·</span>
-                        <span
-                            style={{
-                                fontFamily: "'DM Mono', monospace",
-                                fontSize: "12px",
-                                color: "#b48c64",
-                            }}
-                        >
-                            {deviceInfo?.counterName ?? "—"}
-                        </span>
-                        <AnimatePresence>
-                            {connectionError && (
-                                <motion.span
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    style={{
-                                        background: "#fff1f0",
-                                        color: "#ef4444",
-                                        border: "1px solid #fecaca",
-                                        fontFamily: "'DM Mono', monospace",
-                                        fontSize: "10px",
-                                        padding: "2px 8px",
-                                        borderRadius: 100,
-                                    }}
-                                >
-                                    reconnecting...
-                                </motion.span>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    <div className="text-right">
+                    <div className="flex flex-col gap-1">
                         <p
                             style={{
                                 fontFamily: "'Cormorant Garamond', serif",
-                                fontSize: "26px",
-                                fontWeight: 600,
-                                color: "#3d2c1e",
+                                fontSize: "13px",
+                                color: "#a07850",
+                                fontWeight: 500,
+                                letterSpacing: "0.08em",
                             }}
                         >
-                            {timeStr}
+                            Ebony Singleton · William Allison
                         </p>
-                        <p
-                            style={{
-                                fontFamily: "'DM Sans', sans-serif",
-                                fontSize: "11px",
-                                color: "#b48c64",
-                                marginTop: "2px",
-                            }}
-                        >
-                            {dateStr}
-                        </p>
+                        <div className="flex items-center gap-3">
+                            <motion.div
+                                animate={{
+                                    opacity: connectionError ? [1, 0.2, 1] : 1,
+                                }}
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: connectionError ? Infinity : 0,
+                                }}
+                                className="w-2 h-2 rounded-full"
+                                style={{
+                                    background: connectionError ? "#ef4444" : "#fbbf24",
+                                }}
+                            />
+                            <span
+                                style={{
+                                    fontFamily: "'DM Mono', monospace",
+                                    fontSize: "12px",
+                                    color: "#b48c64",
+                                }}
+                            >
+                                {deviceInfo?.branchName ?? "—"}
+                            </span>
+                            <span style={{ color: "#d4b896" }}>·</span>
+                            <span
+                                style={{
+                                    fontFamily: "'DM Mono', monospace",
+                                    fontSize: "12px",
+                                    color: "#b48c64",
+                                }}
+                            >
+                                {deviceInfo?.counterName ?? "—"}
+                            </span>
+                            <AnimatePresence>
+                                {connectionError && (
+                                    <motion.span
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        style={{
+                                            background: "#fff1f0",
+                                            color: "#ef4444",
+                                            border: "1px solid #fecaca",
+                                            fontFamily: "'DM Mono', monospace",
+                                            fontSize: "10px",
+                                            padding: "2px 8px",
+                                            borderRadius: 100,
+                                        }}
+                                    >
+                                        reconnecting...
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        <div className="text-right">
+                            <p
+                                style={{
+                                    fontFamily: "'Cormorant Garamond', serif",
+                                    fontSize: "32px",
+                                    fontWeight: 700,
+                                    color: "#3d2c1e",
+                                    letterSpacing: "0.03em",
+                                }}
+                            >
+                                {timeStr}
+                            </p>
+                            <p
+                                style={{
+                                    fontFamily: "'DM Sans', sans-serif",
+                                    fontSize: "12px",
+                                    color: "#b48c64",
+                                    marginTop: "2px",
+                                }}
+                            >
+                                {dateStr}
+                            </p>
+                        </div>
                     </div>
                 </motion.div>
 

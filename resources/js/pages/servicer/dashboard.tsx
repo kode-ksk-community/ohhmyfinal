@@ -86,10 +86,10 @@ export default function ServicerDashboard() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+            <div className="flex items-center justify-center min-h-screen" style={{ background: '#f8f1e8' }}>
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading your session...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#aa7b4a] mx-auto mb-4"></div>
+                    <p className="text-[#7a634f]">Loading your session...</p>
                 </div>
             </div>
         );
@@ -97,11 +97,11 @@ export default function ServicerDashboard() {
 
     if (!session) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-                <Card className="p-8 max-w-sm mx-4 text-center">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-4">No Active Session</h1>
-                    <p className="text-gray-600 mb-6">You don't have an active counter session.</p>
-                    <a href="/counter/idle" className="text-indigo-600 hover:text-indigo-700 font-medium">
+            <div className="flex items-center justify-center min-h-screen" style={{ background: '#f8f1e8' }}>
+                <Card className="p-8 max-w-sm mx-4 text-center" style={{ border: '1px solid #e3ceb8', background: 'rgba(255,255,255,.92)' }}>
+                    <h1 className="text-2xl font-bold text-[#4c3829] mb-4">No Active Session</h1>
+                    <p className="text-[#6b5849] mb-6">You don't have an active counter session.</p>
+                    <a href="/counter/idle" className="text-[#7d5f43] hover:text-[#6f4f38] font-semibold">
                         Return to Counter Setup
                     </a>
                 </Card>
@@ -110,25 +110,25 @@ export default function ServicerDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 pb-32">
+        <div className="min-h-screen p-4 pb-32" style={{ background: '#f8f1e8' }}>
             {/* Main Session Card */}
             <div className="max-w-md mx-auto space-y-4">
                 {/* Status Header */}
                 <div className="text-center pt-4">
-                    <Badge className="bg-green-500 hover:bg-green-600 text-white text-lg px-4 py-2">
+                    <Badge className="text-white text-lg px-4 py-2" style={{ background: '#b47d46' }}>
                         Active Session
                     </Badge>
                 </div>
 
                 {/* Counter Information */}
-                <Card className="p-6 shadow-lg rounded-xl">
+                <Card className="p-6 shadow-lg rounded-xl" style={{ border: '1px solid #e5d4c0', background: 'rgba(255,255,255,0.94)' }}>
                     <div className="space-y-4">
                         {/* Counter Label */}
                         <div className="text-center">
-                            <h2 className="text-4xl font-bold text-indigo-600 mb-2">
+                            <h2 className="text-4xl font-bold" style={{ color: '#8f5f35' }}>
                                 {session.counter.label}
                             </h2>
-                            <p className="text-sm text-gray-500">Counter Number</p>
+                            <p className="text-sm" style={{ color: '#80664a' }}>Counter Number</p>
                         </div>
 
                         {/* Branch Information */}
@@ -177,7 +177,8 @@ export default function ServicerDashboard() {
                     <Button
                         onClick={handleTerminateSession}
                         disabled={terminating}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-6 rounded-lg flex items-center justify-center gap-2"
+                        className="w-full text-white font-semibold py-6 rounded-lg flex items-center justify-center gap-2"
+                        style={{ background: '#b23f26' }}
                         size="lg"
                     >
                         <LogOut size={20} />
