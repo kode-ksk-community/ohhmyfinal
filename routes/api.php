@@ -3,7 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-
+use App\Http\Controllers\Client\CounterSetupController;
 use App\Http\Controllers\Client\CounterSessionController;
 use App\Http\Controllers\Client\CounterFeedbackController;
 use App\Http\Controllers\Client\Serviceractivationcontroller;
