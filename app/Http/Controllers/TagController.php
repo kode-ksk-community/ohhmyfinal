@@ -51,7 +51,7 @@ class TagController extends Controller
     /**
      * Store a newly created tag.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -70,19 +70,20 @@ class TagController extends Controller
         $tag->load('branch');
         $tag->loadCount('feedbacks');
 
-        return response()->json([
-            'id' => $tag->id,
-            'branch_id' => $tag->branch_id,
-            'branch_name' => $tag->branch?->name,
-            'name' => $tag->name,
-            'name_kh' => $tag->name_kh,
-            'color' => $tag->color,
-            'icon' => $tag->icon,
-            'sentiment' => $tag->sentiment,
-            'sort_order' => $tag->sort_order,
-            'is_active' => $tag->is_active,
-            'usage_count' => $tag->feedbacks_count,
-        ], 201);
+        return back()->with('success', 'Tag created successfully');
+        // return response()->json([
+        //     'id' => $tag->id,
+        //     'branch_id' => $tag->branch_id,
+        //     'branch_name' => $tag->branch?->name,
+        //     'name' => $tag->name,
+        //     'name_kh' => $tag->name_kh,
+        //     'color' => $tag->color,
+        //     'icon' => $tag->icon,
+        //     'sentiment' => $tag->sentiment,
+        //     'sort_order' => $tag->sort_order,
+        //     'is_active' => $tag->is_active,
+        //     'usage_count' => $tag->feedbacks_count,
+        // ], 201);
     }
 
     /**

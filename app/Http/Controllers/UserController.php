@@ -49,7 +49,7 @@ class UserController extends Controller
     /**
      * Store a newly created user.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -78,19 +78,20 @@ class UserController extends Controller
         $user->load(['branch', 'activeQrToken']);
         $user->loadCount('feedbacks');
 
-        return response()->json([
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'branch_id' => $user->branch_id,
-            'branch_name' => $user->branch?->name,
-            'is_active' => $user->is_active,
-            'has_qr_token' => $user->activeQrToken !== null,
-            'feedback_count' => $user->feedbacks_count,
-            'last_active' => $user->isCurrentlyActive() ? 'Now' : null,
-            'created_at' => $user->created_at->format('Y-m-d'),
-        ]);
+        return back()->with('success', 'User created successfully');
+        // return response()->json([
+        //     'id' => $user->id,
+        //     'name' => $user->name,
+        //     'email' => $user->email,
+        //     'role' => $user->role,
+        //     'branch_id' => $user->branch_id,
+        //     'branch_name' => $user->branch?->name,
+        //     'is_active' => $user->is_active,
+        //     'has_qr_token' => $user->activeQrToken !== null,
+        //     'feedback_count' => $user->feedbacks_count,
+        //     'last_active' => $user->isCurrentlyActive() ? 'Now' : null,
+        //     'created_at' => $user->created_at->format('Y-m-d'),
+        // ]);
     }
 
     /**

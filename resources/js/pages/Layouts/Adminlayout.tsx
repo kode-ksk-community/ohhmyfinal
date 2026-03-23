@@ -33,7 +33,7 @@ const NAV = [
   { key: "users",     icon: "👥", label: "Users",      href: "/admin/users"      },
   { key: "tags",      icon: "🏷️", label: "Tags",       href: "/admin/tags"       },
   { key: "feedback",  icon: "💬", label: "Feedback",   href: "/admin/feedback"   },
-  { key: "settings",  icon: "⚙️", label: "Settings",   href: "/admin/settings"   },
+  // { key: "settings",  icon: "⚙️", label: "Settings",   href: "/admin/settings"   },
 ];
 
 export default function AdminLayout({ children, title, active, actions }: Props) {

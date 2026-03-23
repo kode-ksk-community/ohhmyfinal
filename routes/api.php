@@ -52,9 +52,13 @@ Route::middleware('web')->post('/counter/session/end', [Serviceractivationcontro
 // COUNTER DEVICE API (requires device token)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Route::middleware('device.token')->prefix('counter')->group(function () {
 Route::middleware('device.token')->prefix('counter')->group(function () {
     // Session polling (called every 4 seconds by counter idle screen)
     Route::get('/session/status', [CounterSessionController::class, 'status']);
+
+    // Allow counter to end its own active session (servicer presses "end shift" button)
+    Route::post('/session/end', [CounterSessionController::class, 'end']);
 
     // Feedback data and submission
     Route::get('/feedback-data', [FeedbackController::class, 'data']);

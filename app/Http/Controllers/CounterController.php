@@ -48,7 +48,7 @@ class CounterController extends Controller
     /**
      * Store a newly created counter.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'branch_id' => 'required|exists:branches,id',
@@ -66,18 +66,19 @@ class CounterController extends Controller
         $counter->load(['branch', 'activeSession.servicer']);
         $counter->loadCount('feedbacks');
 
-        return response()->json([
-            'id' => $counter->id,
-            'branch_id' => $counter->branch_id,
-            'branch_name' => $counter->branch->name,
-            'name' => $counter->name,
-            'description' => $counter->description,
-            'is_active' => $counter->is_active,
-            'is_occupied' => $counter->isOccupied(),
-            'current_servicer' => $counter->currentServicer()?->name,
-            'feedback_count' => $counter->feedbacks_count,
-            'created_at' => $counter->created_at->format('Y-m-d'),
-        ]);
+        return back()->with('success', 'Counter created successfully');
+        // return response()->json([
+        //     'id' => $counter->id,
+        //     'branch_id' => $counter->branch_id,
+        //     'branch_name' => $counter->branch->name,
+        //     'name' => $counter->name,
+        //     'description' => $counter->description,
+        //     'is_active' => $counter->is_active,
+        //     'is_occupied' => $counter->isOccupied(),
+        //     'current_servicer' => $counter->currentServicer()?->name,
+        //     'feedback_count' => $counter->feedbacks_count,
+        //     'created_at' => $counter->created_at->format('Y-m-d'),
+        // ]);
     }
 
     /**

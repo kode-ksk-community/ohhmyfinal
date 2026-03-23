@@ -44,6 +44,16 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
+                'can' => [
+                    'access-admin-page' => $request->user()?->can('access-admin-page'),
+                    'access-instructor-page' => $request->user()?->can('access-instructor-page'),
+                ],
+            ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error'   => $request->session()->get('error'),
+                // 'success' => session()->pull('success'), // pull removes after read
+                // 'error'   => session()->pull('error'),
             ],
         ]);
     }

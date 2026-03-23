@@ -222,11 +222,11 @@ function useApiWithRetry() {
                     const apiError: ApiError = {
                         message:
                             e.response?.data &&
-                            typeof e.response.data === "object" &&
-                            "message" in e.response.data
+                                typeof e.response.data === "object" &&
+                                "message" in e.response.data
                                 ? (e.response.data as { message?: string }).message ??
-                                  e.message ??
-                                  "An unexpected error occurred"
+                                e.message ??
+                                "An unexpected error occurred"
                                 : e.message ?? "An unexpected error occurred",
                         code: e.response?.status?.toString() ?? "UNKNOWN",
                         details: e.response?.data ?? null,
@@ -635,10 +635,10 @@ function IdleScreen({
                                         background: !isOnline
                                             ? "#ef4444"
                                             : connectionError
-                                            ? "#f97316"
-                                            : retryCount > 0
-                                            ? "#eab308"
-                                            : "#b48c64",
+                                                ? "#f97316"
+                                                : retryCount > 0
+                                                    ? "#eab308"
+                                                    : "#b48c64",
                                     }}
                                 />
                                 <span
@@ -651,12 +651,12 @@ function IdleScreen({
                                     {!isOnline
                                         ? "Offline"
                                         : isInitialLoad
-                                        ? "Connecting..."
-                                        : connectionError
-                                        ? `Retrying... (${retryCount})`
-                                        : retryCount > 0
-                                        ? `Reconnected`
-                                        : `Last checked: ${lastCheckedStr}`}
+                                            ? "Connecting..."
+                                            : connectionError
+                                                ? `Retrying... (${retryCount})`
+                                                : retryCount > 0
+                                                    ? `Reconnected`
+                                                    : `Last checked: ${lastCheckedStr}`}
                                 </span>
                             </div>
                         </motion.div>
@@ -784,11 +784,11 @@ function SmileyFace({
     const strokeW = size * 0.05;
 
     const mouth = {
-        excellent: <path d={`M${size*0.32} ${size*0.62} Q${size*0.5} ${size*0.78} ${size*0.68} ${size*0.62}`} stroke={color} strokeWidth={strokeW} strokeLinecap="round" fill="none" />,
-        good:      <path d={`M${size*0.34} ${size*0.63} Q${size*0.5} ${size*0.74} ${size*0.66} ${size*0.63}`} stroke={color} strokeWidth={strokeW} strokeLinecap="round" fill="none" />,
-        medium:    <line x1={size*0.34} y1={size*0.66} x2={size*0.66} y2={size*0.66} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />,
-        poor:      <path d={`M${size*0.34} ${size*0.70} Q${size*0.5} ${size*0.60} ${size*0.66} ${size*0.70}`} stroke={color} strokeWidth={strokeW} strokeLinecap="round" fill="none" />,
-        veryBad:   <path d={`M${size*0.32} ${size*0.72} Q${size*0.5} ${size*0.58} ${size*0.68} ${size*0.72}`} stroke={color} strokeWidth={strokeW} strokeLinecap="round" fill="none" />,
+        excellent: <path d={`M${size * 0.32} ${size * 0.62} Q${size * 0.5} ${size * 0.78} ${size * 0.68} ${size * 0.62}`} stroke={color} strokeWidth={strokeW} strokeLinecap="round" fill="none" />,
+        good: <path d={`M${size * 0.34} ${size * 0.63} Q${size * 0.5} ${size * 0.74} ${size * 0.66} ${size * 0.63}`} stroke={color} strokeWidth={strokeW} strokeLinecap="round" fill="none" />,
+        medium: <line x1={size * 0.34} y1={size * 0.66} x2={size * 0.66} y2={size * 0.66} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />,
+        poor: <path d={`M${size * 0.34} ${size * 0.70} Q${size * 0.5} ${size * 0.60} ${size * 0.66} ${size * 0.70}`} stroke={color} strokeWidth={strokeW} strokeLinecap="round" fill="none" />,
+        veryBad: <path d={`M${size * 0.32} ${size * 0.72} Q${size * 0.5} ${size * 0.58} ${size * 0.68} ${size * 0.72}`} stroke={color} strokeWidth={strokeW} strokeLinecap="round" fill="none" />,
     }[type];
 
     return (
@@ -907,6 +907,35 @@ function FeedbackScreen({ session, onComplete }: FeedbackScreenProps) {
             });
             onComplete();
         }, THANK_YOU_DURATION * 1000);
+    };
+
+    const [endingSession, setEndingSession] = useState(false);
+
+    const handleCounterSessionEnd = async () => {
+        if (endingSession) return;
+
+        setEndingSession(true);
+        try {
+            const token = localStorage.getItem("counter_device_token");
+            const response = await axios.post(
+                "/api/counter/session/end",
+                {},
+                { headers: { "X-Counter-Token": token } }
+            );
+
+            if (response.data.success) {
+                onComplete();
+                return;
+            }
+
+            setSubmitError(response.data.message || "Unable to end session.");
+        } catch (err: unknown) {
+            console.error("Counter session end error:", err);
+            const e = err as { response?: { data?: { error?: string } }; message?: string };
+            setSubmitError(e.response?.data?.error || e.message || "Failed to end session.");
+        } finally {
+            setEndingSession(false);
+        }
     };
 
     const handleBack = () => {
@@ -1226,23 +1255,43 @@ function FeedbackScreen({ session, onComplete }: FeedbackScreenProps) {
                                 </div>
                             </div>
 
-                            <motion.button
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                onClick={handleBack}
-                                style={{
-                                    fontFamily: "'DM Sans', sans-serif",
-                                    fontSize: "14px",
-                                    color: "#6b7280",
-                                    background: "none",
-                                    border: "1px solid #e5e7eb",
-                                    borderRadius: "8px",
-                                    padding: "6px 14px",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                ← Back
-                            </motion.button>
+                            <div className="flex items-center gap-2">
+                                <motion.button
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    onClick={handleBack}
+                                    style={{
+                                        fontFamily: "'DM Sans', sans-serif",
+                                        fontSize: "14px",
+                                        color: "#6b7280",
+                                        background: "none",
+                                        border: "1px solid #e5e7eb",
+                                        borderRadius: "8px",
+                                        padding: "6px 14px",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    ← Back
+                                </motion.button>
+                                <motion.button
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    onClick={handleCounterSessionEnd}
+                                    disabled={endingSession}
+                                    style={{
+                                        fontFamily: "'DM Sans', sans-serif",
+                                        fontSize: "14px",
+                                        color: "#ffffff",
+                                        background: "#ef4444",
+                                        border: "1px solid #ef4444",
+                                        borderRadius: "8px",
+                                        padding: "6px 14px",
+                                        cursor: endingSession ? "not-allowed" : "pointer",
+                                    }}
+                                >
+                                    {endingSession ? "Ending…" : "End Session"}
+                                </motion.button>
+                            </div>
                         </motion.div>
 
                         {/* Form body */}
@@ -1494,7 +1543,6 @@ export default function CounterActive() {
             setIsInitialLoad(false);
 
             if (res.data.active && res.data.session) {
-                setPollingPaused(true);
                 setActiveSession(res.data.session);
             } else if (activeSession) {
                 setActiveSession(null);

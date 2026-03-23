@@ -331,25 +331,36 @@ export default function ServicerActivation() {
 
   // ── Logout from counter session ─────────────────────────────────────────
   const handleLogout = async () => {
+    if (!window.confirm("Are you sure you want to end the current counter session?")) {
+      return;
+    }
+
     setIsLoggingOut(true);
 
     try {
       const res = await axios.post<{
         success: boolean;
         message: string;
-      }>("/api/counter/session/end", {
-        counter_token: counterToken,
-      });
+      }>(
+        "/api/counter/session/end",
+        {
+          counter_token: counterToken,
+        },
+        {
+          headers: {
+            "X-Counter-Token": counterToken,
+          },
+        }
+      );
 
       if (res.data.success) {
-        // Show a brief confirmation then redirect
+        // Show a brief confirmation then redirect to dashboard
         setErrorMsg("Session ended. Thank you!");
-        setPageState("error");
+        setPageState("success");
 
-        // Redirect after a short delay
         setTimeout(() => {
-          window.location.href = "/";
-        }, 2000);
+          window.location.href = "/dashboard";
+        }, 1200);
       }
     } catch (err: any) {
       const message = err.response?.data?.message ?? "Failed to end session. Please try again.";
