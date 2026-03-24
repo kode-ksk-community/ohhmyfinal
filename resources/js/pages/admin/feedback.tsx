@@ -56,7 +56,7 @@ export default function AdminFeedback({ feedbacks }: Props) {
 
   // Filter and sort feedback
   const filtered = useMemo(() => {
-    let result = feedbacks.data.filter((f) => {
+    const result = feedbacks.data.filter((f) => {
       const matchesSearch =
         f.comment?.toLowerCase().includes(search.toLowerCase()) ||
         f.servicer_name.toLowerCase().includes(search.toLowerCase()) ||

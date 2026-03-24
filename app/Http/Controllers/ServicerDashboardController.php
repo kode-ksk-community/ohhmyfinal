@@ -51,7 +51,7 @@ class ServicerDashboardController extends Controller
         $session->update([
             'ended_at' => now(),
             'end_reason' => 'logout',
-        ]);
+        ]); 
 
         // Update counter status to idle
         // $session->counter->update([

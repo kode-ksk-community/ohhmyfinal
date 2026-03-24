@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Branch;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -43,6 +44,92 @@ class UserController extends Controller
         return Inertia::render('admin/users', [
             'users' => $users,
             'branches' => $branches,
+        ]);
+    }
+
+    /**
+     * Show a user's detail page (admin view).
+     */
+    public function show(User $user): Response
+    {
+        $user->load(['branch', 'activeQrToken']);
+        $user->loadCount('feedbacks');
+
+        return Inertia::render('admin/user-detail', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'branch_id' => $user->branch_id,
+                'branch_name' => $user->branch?->name,
+                'is_active' => $user->is_active,
+                'has_qr_token' => $user->activeQrToken !== null,
+                'feedback_count' => $user->feedbacks_count,
+                'last_active' => $user->isCurrentlyActive() ? 'Now' : null,
+                'created_at' => $user->created_at->format('Y-m-d'),
+            ],
+        ]);
+    }
+
+    /**
+     * Get servicer stats for user-detail (web guard, not API auth issue)
+     */
+    public function servicerStats(Request $request, User $user): JsonResponse
+    {
+        if (!$user->isServicer()) {
+            return response()->json(['error' => 'Only servicers have stats'], 422);
+        }
+
+        $period = $request->query('period', 'monthly');
+        $end = Carbon::now();
+        switch ($period) {
+            case 'daily':
+                $start = $end->copy()->startOfDay();
+                break;
+            case 'weekly':
+                $start = $end->copy()->startOfWeek();
+                break;
+            case 'monthly':
+                $start = $end->copy()->startOfMonth();
+                break;
+            case 'yearly':
+                $start = $end->copy()->startOfYear();
+                break;
+            default:
+                $start = $end->copy()->subMonth();
+                break;
+        }
+
+        $feedbacks = $user->feedbacks()
+            ->whereBetween('created_at', [$start, $end])
+            ->with(['counter:id,name,branch_id', 'counter.branch:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->limit(300)
+            ->get();
+
+        $total = $feedbacks->count();
+        $averageRating = $feedbacks->avg('rating') ?? 0;
+        $averageSentiment = $feedbacks->avg('sentiment_score') ?? 0;
+        $positive = $feedbacks->where('rating', '>=', 4)->count();
+        $negative = $feedbacks->where('rating', '<=', 2)->count();
+
+        return response()->json([
+            'total_feedbacks' => $total,
+            'average_rating' => round($averageRating, 2),
+            'average_sentiment' => round($averageSentiment, 3),
+            'positive_percentage' => $total ? round(100 * $positive / $total, 1) : 0,
+            'negative_percentage' => $total ? round(100 * $negative / $total, 1) : 0,
+            'feedbacks' => $feedbacks->map(fn($f) => [
+                'id' => $f->id,
+                'rating' => $f->rating,
+                'sentiment_label' => $f->sentiment_label,
+                'sentiment_score' => $f->sentiment_score,
+                'comment' => $f->comment,
+                'counter_name' => $f->counter?->name ?? 'Unknown',
+                'branch_name' => $f->counter?->branch?->name ?? 'Unknown',
+                'submitted_at' => $f->created_at->format('Y-m-d H:i'),
+            ]),
         ]);
     }
 
@@ -200,19 +287,19 @@ class UserController extends Controller
     {
         // Generate a password reset token
         $token = \Illuminate\Support\Str::random(64);
-        
+
         // Store the token in password_resets table or similar
         // For now, we'll send a reset email with a temporary password or token
         // In production, you'd use Laravel's password reset broker
-        
+
         try {
             // Generate a temporary password for demo purposes
             // In production, use proper password reset tokens
             $temporaryPassword = \Illuminate\Support\Str::random(12);
-            
+
             // You can send email here or just return success
             // \Mail::to($user->email)->send(new ResetPasswordMail($user, $token));
-            
+
             return response()->json([
                 'message' => 'Password reset email sent to ' . $user->email,
                 'success' => true,

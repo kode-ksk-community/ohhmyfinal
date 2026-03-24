@@ -51,6 +51,8 @@ Route::prefix('admin')
 
         // Admin pages (views for managing entities)
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::get('/users/{user}/stats', [UserController::class, 'servicerStats'])->name('users.stats');
         Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
         Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
         Route::get('/counters', [CounterController::class, 'index'])->name('counters.index');
@@ -68,7 +70,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         $user = auth()->user();
 
-        return match($user->role) {
+        return match ($user->role) {
             'servicer' => redirect()->route('servicer.dashboard'),
             'branch_manager' => redirect()->route('admin.dashboard'),
             'admin', 'super_admin' => redirect()->route('admin.dashboard'),

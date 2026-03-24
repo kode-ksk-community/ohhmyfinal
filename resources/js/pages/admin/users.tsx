@@ -20,7 +20,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { router } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../Layouts/AdminLayout";
 
@@ -640,6 +640,17 @@ export default function AdminUsers({ users: initialUsers, branches }: Props) {
                     {/* Actions */}
                     <td style={{ padding: "14px 16px" }}>
                       <div className="flex items-center gap-2 flex-wrap">
+                        <Link
+                          href={route('admin.users.show', user.id)}
+                          style={{
+                            padding: "6px 12px", borderRadius: 8,
+                            border: "1px solid #e2e8f0", background: "transparent",
+                            fontFamily: "'DM Sans',sans-serif", fontSize: "12px",
+                            color: "#374151", cursor: "pointer", textDecoration: 'none'
+                          }}
+                        >
+                          View
+                        </Link>
                         <button onClick={() => setDrawer(user)}
                           style={{
                             padding: "6px 12px", borderRadius: 8,

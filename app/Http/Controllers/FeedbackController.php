@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Models\Tag;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -317,12 +318,20 @@ class FeedbackController extends Controller
      */
     public function servicerPerformance(Request $request): JsonResponse
     {
-        $startDate = $request->query('start_date', now()->subDays(30));
-        $endDate = $request->query('end_date', now());
+        try {
+            $startDate = Carbon::parse($request->query('start_date', now()->subDays(30)))->toDateTimeString();
+            $endDate = Carbon::parse($request->query('end_date', now()))->toDateTimeString();
+        } catch (\Exception $e) {
+            $startDate = now()->subDays(30)->toDateTimeString();
+            $endDate = now()->toDateTimeString();
+        }
+
         $branchId = $request->query('branch_id');
+        $servicerId = $request->query('servicer_id');
 
         $performance = Feedback::whereBetween('created_at', [$startDate, $endDate])
             ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($servicerId, fn($q) => $q->where('servicer_id', $servicerId))
             ->with('servicer:id,name')
             ->selectRaw('
                 servicer_id,
@@ -350,6 +359,46 @@ class FeedbackController extends Controller
             });
 
         return response()->json($performance);
+    }
+
+    /**
+     * Get performance data for a single servicer, including raw feedback entries.
+     */
+    public function servicerFeedback(Request $request): JsonResponse
+    {
+        $servicerId = $request->query('servicer_id');
+        if (!$servicerId) {
+            return response()->json(['error' => 'servicer_id is required'], 422);
+        }
+
+        try {
+            $startDate = Carbon::parse($request->query('start_date', now()->subDays(30)))->toDateTimeString();
+            $endDate = Carbon::parse($request->query('end_date', now()))->toDateTimeString();
+        } catch (\Exception $e) {
+            $startDate = now()->subDays(30)->toDateTimeString();
+            $endDate = now()->toDateTimeString();
+        }
+
+        $feedbacks = Feedback::where('servicer_id', $servicerId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->with(['counter:id,name,branch_id', 'counter.branch:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->limit(200)
+            ->get()
+            ->map(function ($feedback) {
+                return [
+                    'id' => $feedback->id,
+                    'rating' => $feedback->rating,
+                    'sentiment_label' => $feedback->sentiment_label,
+                    'sentiment_score' => $feedback->sentiment_score,
+                    'comment' => $feedback->comment,
+                    'counter_name' => $feedback->counter?->name ?? 'Unknown',
+                    'branch_name' => $feedback->counter?->branch?->name ?? 'Unknown',
+                    'submitted_at' => $feedback->created_at->format('Y-m-d H:i'),
+                ];
+            });
+
+        return response()->json(['feedbacks' => $feedbacks]);
     }
 
     /**
