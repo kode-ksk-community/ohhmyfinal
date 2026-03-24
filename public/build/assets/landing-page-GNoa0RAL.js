@@ -1,11 +1,4 @@
-import { Head } from '@inertiajs/react';
-
-export default function LandingPage() {
-    return (
-        <>
-            <Head title="FeedbackPro" />
-
-            <style>{`
+import{j as e,L as t}from"./app-DeeNJqY0.js";function r(){return e.jsxs(e.Fragment,{children:[e.jsx(t,{title:"FeedbackPro"}),e.jsx("style",{children:`
                 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
                 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -177,53 +170,4 @@ export default function LandingPage() {
                     0%, 100% { opacity: 0.9; transform: scale(1); }
                     50%       { opacity: 0.45; transform: scale(0.88); }
                 }
-            `}</style>
-
-            <div className="root">
-                <div className="card">
-
-                    {/* Badge */}
-                    <div className="badge">
-                        <span className="badge-dot" />
-                        <span className="badge-text">Feedback Intelligence</span>
-                    </div>
-
-                    {/* Title */}
-                    <h1 className="title">
-                        Feedback<br /><em>Pro</em>
-                    </h1>
-
-                    {/* Subtitle */}
-                    <p className="subtitle">
-                        Capture customer voices, activate servicers, and turn every interaction into insight.
-                    </p>
-
-                    <div className="divider" />
-
-                    {/* Buttons */}
-                    <div className="btn-group">
-                        <a href="/counter/setup" className="btn btn-primary">
-                            Set Up a Counter
-                            <svg className="btn-arrow" viewBox="0 0 14 14" fill="none">
-                                <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                        </a>
-                        <a href="/admin/dashboard" className="btn btn-secondary">
-                            Open Admin Panel
-                            <svg className="btn-arrow" viewBox="0 0 14 14" fill="none">
-                                <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                        </a>
-                        <a href="/counter/idle" className="btn btn-ghost">
-                            View Counter Mode
-                        </a>
-                    </div>
-
-                </div>
-
-                {/* Footer */}
-                <p className="footer-hint">This device will remember its counter after setup</p>
-            </div>
-        </>
-    );
-}
+            `}),e.jsxs("div",{className:"root",children:[e.jsxs("div",{className:"card",children:[e.jsxs("div",{className:"badge",children:[e.jsx("span",{className:"badge-dot"}),e.jsx("span",{className:"badge-text",children:"Feedback Intelligence"})]}),e.jsxs("h1",{className:"title",children:["Feedback",e.jsx("br",{}),e.jsx("em",{children:"Pro"})]}),e.jsx("p",{className:"subtitle",children:"Capture customer voices, activate servicers, and turn every interaction into insight."}),e.jsx("div",{className:"divider"}),e.jsxs("div",{className:"btn-group",children:[e.jsxs("a",{href:"/counter/setup",className:"btn btn-primary",children:["Set Up a Counter",e.jsx("svg",{className:"btn-arrow",viewBox:"0 0 14 14",fill:"none",children:e.jsx("path",{d:"M2 7h10M8 3l4 4-4 4",stroke:"currentColor",strokeWidth:"1.5",strokeLinecap:"round",strokeLinejoin:"round"})})]}),e.jsxs("a",{href:"/admin/dashboard",className:"btn btn-secondary",children:["Open Admin Panel",e.jsx("svg",{className:"btn-arrow",viewBox:"0 0 14 14",fill:"none",children:e.jsx("path",{d:"M2 7h10M8 3l4 4-4 4",stroke:"currentColor",strokeWidth:"1.5",strokeLinecap:"round",strokeLinejoin:"round"})})]}),e.jsx("a",{href:"/counter/idle",className:"btn btn-ghost",children:"View Counter Mode"})]})]}),e.jsx("p",{className:"footer-hint",children:"This device will remember its counter after setup"})]})]})}export{r as default};

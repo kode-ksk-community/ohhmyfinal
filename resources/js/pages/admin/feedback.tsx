@@ -440,13 +440,13 @@ export default function AdminFeedback({ feedbacks }: Props) {
                     )}
                   </div>
 
-                  <button
+                  {/* <button
                     onClick={() => handleDelete(feedback)}
                     className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
                     title="Delete feedback"
                   >
                     ✕
-                  </button>
+                  </button> */}
                 </div>
               </motion.div>
             ))

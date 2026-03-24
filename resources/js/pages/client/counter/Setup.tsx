@@ -1,5 +1,5 @@
 /**
- * CounterSetup.tsx
+ * CounterSetup.tsx — Redesigned
  *
  * Counter device setup page — shown on first visit or when the device
  * has no active device_token in localStorage.
@@ -9,49 +9,6 @@
  *   Step 2 → Select Counter  (fetched from API after branch is chosen)
  *   Step 3 → Enter PIN       (submitted to API → device_token returned)
  *   ✅ Done → token stored in localStorage → Inertia redirect to /counter/idle
- *
- * Route:    GET  /counter/setup
- *           (renders this page via CounterSetupController@show)
- * File:     resources/js/Pages/Counter/Setup.tsx
- *
- * ─── Laravel side you need ────────────────────────────────────────────────────
- *
- * routes/web.php:
- *   Route::get('/counter/setup', [CounterSetupController::class, 'show'])
- *        ->name('counter.setup');
- *   Route::get('/counter/idle',  [CounterSetupController::class, 'idle'])
- *        ->name('counter.idle');
- *
- * routes/api.php:
- *   Route::get('/branches/{branch}/counters', [CounterSetupController::class, 'counters']);
- *   Route::post('/counter/activate-device',   [CounterSetupController::class, 'activateDevice']);
- *
- * CounterSetupController@show:
- *   return Inertia::render('Counter/Setup', [
- *       'branches' => Branch::active()->select('id','name','address')->get(),
- *   ]);
- *
- * CounterSetupController@counters  (JSON):
- *   $branch = Branch::findOrFail($branch);
- *   return response()->json([
- *       'data' => $branch->counters()
- *           ->active()
- *           ->select('id','branch_id','name','description')
- *           ->get(),
- *   ]);
- *
- * CounterSetupController@activateDevice  (JSON):
- *   $validated = $request->validate([
- *       'counter_id' => 'required|exists:counters,id',
- *       'pin'        => 'required|string',
- *   ]);
- *   $counter = Counter::findOrFail($validated['counter_id']);
- *   if (!Hash::check($validated['pin'], $counter->pin)) {
- *       return response()->json(['message' => 'Incorrect PIN.'], 422);
- *   }
- *   $token = $counter->issueDeviceToken(); // generates + stores Str::random(64)
- *   return response()->json(['device_token' => $token]);
- * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { useState, useCallback } from "react";
@@ -75,84 +32,103 @@ interface Counter {
   description: string | null;
 }
 
-/**
- * Props injected by Inertia (CounterSetupController@show).
- * `branches` is always present — it is loaded server-side so the page
- * renders instantly without a client-side fetch on load.
- */
 interface Props {
   branches: Branch[];
 }
-
-// ─── Animation variants ───────────────────────────────────────────────────────
-
-const stepVariants = {
-  enter: { opacity: 0, x: 48, filter: "blur(4px)" },
-  center: {
-    opacity: 1, x: 0, filter: "blur(0px)",
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-  },
-  exit: {
-    opacity: 0, x: -48, filter: "blur(4px)",
-    transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.97 },
-  visible: (i: number) => ({
-    opacity: 1, y: 0, scale: 1,
-    transition: { delay: i * 0.07, duration: 0.35, ease: [0.22, 1, 0.36, 1] },
-  }),
-};
 
 // ─── Step Indicator ───────────────────────────────────────────────────────────
 
 function StepIndicator({ current }: { current: number }) {
   const steps = ["Branch", "Counter", "PIN"];
   return (
-    <div className="flex items-center gap-3 mb-10 justify-center">
-      {steps?.map((label, i) => {
+    <div className="flex items-center justify-center gap-0 mb-10">
+      {steps.map((label, i) => {
         const step = i + 1;
         const isActive = step === current;
         const isDone = step < current;
+
         return (
-          <div key={label} className="flex items-center gap-3">
-            <div className="flex flex-col items-center gap-1">
+          <div key={label} className="flex items-center">
+            {/* Step node */}
+            <div className="flex flex-col items-center" style={{ width: 56 }}>
               <motion.div
                 animate={{
-                  backgroundColor: isDone ? "#10b981" : isActive ? "#f8fafc" : "transparent",
-                  borderColor: isDone ? "#10b981" : isActive ? "#f8fafc" : "rgba(248,250,252,0.2)",
-                  scale: isActive ? 1.12 : 1,
+                  backgroundColor: isDone
+                    ? "#b98951"
+                    : isActive
+                    ? "#3d2c1e"
+                    : "transparent",
+                  borderColor: isDone
+                    ? "#b98951"
+                    : isActive
+                    ? "#3d2c1e"
+                    : "rgba(61,44,30,0.2)",
+                  scale: isActive ? 1.1 : 1,
                 }}
-                transition={{ duration: 0.3 }}
-                className="w-9 h-9 rounded-full border-2 flex items-center justify-center"
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                className="w-8 h-8 rounded-full border-2 flex items-center justify-center mb-1.5"
               >
                 {isDone ? (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                    className="text-white text-sm font-bold">✓</motion.span>
+                  <motion.svg
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                  >
+                    <motion.path
+                      d="M2 6l3 3 5-5"
+                      stroke="white"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </motion.svg>
                 ) : (
-                  <span className="text-sm font-bold"
+                  <span
                     style={{
-                      color: isActive ? "#0f172a" : "rgba(248,250,252,0.3)",
-                      fontFamily: "'DM Mono', monospace"
-                    }}>
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      fontFamily: "'DM Mono', monospace",
+                      color: isActive ? "#f8f1e8" : "rgba(61,44,30,0.35)",
+                    }}
+                  >
                     {step}
                   </span>
                 )}
               </motion.div>
-              <span className="text-xs tracking-widest uppercase"
+              <span
                 style={{
-                  color: isActive ? "#f8fafc" : isDone ? "#10b981" : "rgba(248,250,252,0.3)",
+                  fontSize: "10px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
                   fontFamily: "'DM Mono', monospace",
                   fontWeight: 500,
-                }}>
+                  color: isActive
+                    ? "#3d2c1e"
+                    : isDone
+                    ? "#b98951"
+                    : "rgba(61,44,30,0.3)",
+                  transition: "color 0.3s",
+                }}
+              >
                 {label}
               </span>
             </div>
-            {i < steps?.length - 1 && (
-              <motion.div className="w-14 h-px mb-5"
-                animate={{ backgroundColor: isDone ? "#10b981" : "rgba(248,250,252,0.12)" }}
+
+            {/* Connector */}
+            {i < steps.length - 1 && (
+              <motion.div
+                style={{ width: 40, height: 1, marginBottom: 20, flexShrink: 0 }}
+                animate={{
+                  backgroundColor: isDone
+                    ? "#b98951"
+                    : "rgba(61,44,30,0.12)",
+                }}
                 transition={{ duration: 0.4 }}
               />
             )}
@@ -165,7 +141,13 @@ function StepIndicator({ current }: { current: number }) {
 
 // ─── Selectable Card ──────────────────────────────────────────────────────────
 
-function SelectCard({ label, sublabel, selected, onClick, index }: {
+function SelectCard({
+  label,
+  sublabel,
+  selected,
+  onClick,
+  index,
+}: {
   label: string;
   sublabel?: string | null;
   selected: boolean;
@@ -174,100 +156,256 @@ function SelectCard({ label, sublabel, selected, onClick, index }: {
 }) {
   return (
     <motion.button
-      custom={index}
-      variants={cardVariants}
-      initial="hidden"
-      animate="visible"
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.97 }}
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay: index * 0.055,
+        duration: 0.38,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      whileTap={{ scale: 0.985 }}
       onClick={onClick}
-      className="w-full text-left px-5 py-4 rounded-2xl border-2 transition-colors"
+      className="w-full text-left group"
       style={{
-        borderColor: selected ? "#f8fafc" : "rgba(248,250,252,0.1)",
-        backgroundColor: selected ? "rgba(248,250,252,0.1)" : "rgba(248,250,252,0.03)",
+        padding: "14px 18px",
+        borderRadius: 16,
+        border: `1.5px solid ${selected ? "#b98951" : "rgba(61,44,30,0.1)"}`,
+        backgroundColor: selected
+          ? "rgba(185,137,81,0.06)"
+          : "rgba(61,44,30,0.015)",
+        transition: "border-color 0.2s, background-color 0.2s",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
       }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-base font-semibold"
-            style={{
-              color: selected ? "#f8fafc" : "rgba(248,250,252,0.65)",
-              fontFamily: "'Syne', sans-serif",
-            }}>
-            {label}
-          </p>
-          {sublabel && (
-            <p className="text-xs mt-0.5" style={{ color: "rgba(248,250,252,0.35)" }}>
-              {sublabel}
-            </p>
-          )}
-        </div>
-        <motion.div
-          animate={{ scale: selected ? 1 : 0.4, opacity: selected ? 1 : 0 }}
-          className="w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0"
+      <div style={{ minWidth: 0 }}>
+        <p
+          style={{
+            fontSize: "15px",
+            fontWeight: 600,
+            fontFamily: "'DM Sans', sans-serif",
+            color: selected ? "#3d2c1e" : "rgba(61,44,30,0.65)",
+            transition: "color 0.2s",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
         >
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-900" />
-        </motion.div>
+          {label}
+        </p>
+        {sublabel && (
+          <p
+            style={{
+              fontSize: "12px",
+              color: "rgba(61,44,30,0.4)",
+              marginTop: 2,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {sublabel}
+          </p>
+        )}
       </div>
+
+      {/* Selection indicator */}
+      <motion.div
+        animate={{
+          scale: selected ? 1 : 0.6,
+          opacity: selected ? 1 : 0,
+        }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: "50%",
+          backgroundColor: "#b98951",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path
+            d="M2 5l2.5 2.5 3.5-4"
+            stroke="white"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </motion.div>
     </motion.button>
+  );
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
+function EmptyState({ icon, title, hint }: { icon: string; title: string; hint: string }) {
+  return (
+    <div
+      style={{
+        textAlign: "center",
+        padding: "36px 16px",
+        borderRadius: 16,
+        border: "1.5px dashed rgba(61,44,30,0.12)",
+        backgroundColor: "rgba(61,44,30,0.02)",
+      }}
+    >
+      <div style={{ fontSize: 32, marginBottom: 10 }}>{icon}</div>
+      <p style={{ fontSize: "14px", color: "rgba(61,44,30,0.6)", fontWeight: 500 }}>
+        {title}
+      </p>
+      <p style={{ fontSize: "12px", color: "rgba(61,44,30,0.35)", marginTop: 4 }}>
+        {hint}
+      </p>
+    </div>
+  );
+}
+
+// ─── Back Button ──────────────────────────────────────────────────────────────
+
+function BackButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        background: "rgba(61,44,30,0.06)",
+        border: "1.5px solid rgba(61,44,30,0.1)",
+        color: disabled ? "rgba(61,44,30,0.25)" : "#6b4c2f",
+        cursor: disabled ? "not-allowed" : "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        transition: "opacity 0.2s",
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path
+          d="M9 11L5 7l4-4"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
   );
 }
 
 // ─── PIN Keypad ───────────────────────────────────────────────────────────────
 
-function PinKeypad({ pin, onChange, disabled }: {
+function PinKeypad({
+  pin,
+  onChange,
+  disabled,
+}: {
   pin: string;
   onChange: (pin: string) => void;
   disabled?: boolean;
 }) {
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
+  const PIN_LENGTH = 6;
 
   const handleKey = (key: string) => {
     if (disabled) return;
     if (key === "del") onChange(pin.slice(0, -1));
-    else if (pin?.length < 6) onChange(pin + key);
+    else if (pin.length < PIN_LENGTH) onChange(pin + key);
   };
 
   return (
-    <div className="flex flex-col items-center gap-7">
-      {/* Dots */}
-      <div className="flex gap-4">
-        {Array.from({ length: 6 })?.map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{
-              scale: i === pin?.length - 1 ? [1, 1.35, 1] : 1,
-              backgroundColor: i < pin?.length ? "#f8fafc" : "rgba(248,250,252,0.15)",
-            }}
-            transition={{ duration: 0.15 }}
-            className="w-3.5 h-3.5 rounded-full"
-          />
-        ))}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
+      {/* Dot indicators */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        {Array.from({ length: PIN_LENGTH }).map((_, i) => {
+          const filled = i < pin.length;
+          const isJustFilled = i === pin.length - 1;
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                scale: isJustFilled ? [1, 1.4, 1] : 1,
+                backgroundColor: filled ? "#3d2c1e" : "rgba(61,44,30,0.12)",
+              }}
+              transition={{ duration: 0.18 }}
+              style={{
+                width: filled ? 12 : 10,
+                height: filled ? 12 : 10,
+                borderRadius: "50%",
+                transition: "width 0.15s, height 0.15s",
+              }}
+            />
+          );
+        })}
       </div>
 
-      {/* Keys */}
-      <div className="grid grid-cols-3 gap-3 w-full max-w-[260px]">
-        {keys?.map((key, i) => {
-          if (key === "") return <div key={i} />;
+      {/* Keypad grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 10,
+          width: "100%",
+          maxWidth: 252,
+        }}
+      >
+        {keys.map((key, i) => {
+          if (key === "")
+            return <div key={i} style={{ height: 52 }} />;
+
+          const isDel = key === "del";
           return (
             <motion.button
               key={i}
-              whileHover={!disabled ? { scale: 1.06 } : {}}
-              whileTap={!disabled ? { scale: 0.91 } : {}}
+              whileTap={!disabled ? { scale: 0.88 } : {}}
               onClick={() => handleKey(key)}
               disabled={disabled}
-              className="h-14 rounded-2xl flex items-center justify-center"
               style={{
-                backgroundColor: key === "del" ? "rgba(248,250,252,0.05)" : "rgba(248,250,252,0.08)",
-                border: "1px solid rgba(248,250,252,0.1)",
-                color: disabled ? "rgba(248,250,252,0.3)" : "rgba(248,250,252,0.9)",
-                fontSize: key === "del" ? "15px" : "20px",
-                fontFamily: key === "del" ? "inherit" : "'DM Mono', monospace",
+                height: 52,
+                borderRadius: 14,
+                border: "1.5px solid rgba(61,44,30,0.1)",
+                backgroundColor: isDel
+                  ? "rgba(61,44,30,0.03)"
+                  : "rgba(61,44,30,0.05)",
+                color: disabled ? "rgba(61,44,30,0.25)" : "#3d2c1e",
+                fontSize: isDel ? 16 : 19,
+                fontFamily: isDel ? "'DM Sans', sans-serif" : "'DM Mono', monospace",
+                fontWeight: isDel ? 400 : 500,
                 cursor: disabled ? "not-allowed" : "pointer",
-                opacity: disabled ? 0.5 : 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "background-color 0.15s",
               }}
             >
-              {key === "del" ? "⌫" : key}
+              {isDel ? (
+                <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+                  <path
+                    d="M6.5 1H17V13H6.5L1 7l5.5-6z"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M10 5l4 4M14 5l-4 4"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              ) : (
+                key
+              )}
             </motion.button>
           );
         })}
@@ -276,20 +414,83 @@ function PinKeypad({ pin, onChange, disabled }: {
   );
 }
 
-// ─── Spinner helper ───────────────────────────────────────────────────────────
+// ─── Spinner ──────────────────────────────────────────────────────────────────
 
-function Spinner() {
+function Spinner({ size = 16, color = "#b98951" }: { size?: number; color?: string }) {
   return (
-    <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
-      style={{ borderColor: "rgba(248,250,252,0.4)", borderTopColor: "transparent" }} />
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        border: `2px solid ${color}30`,
+        borderTopColor: color,
+        animation: "spin 0.7s linear infinite",
+        flexShrink: 0,
+      }}
+    />
   );
 }
+
+// ─── Section Header ───────────────────────────────────────────────────────────
+
+function SectionHeader({
+  title,
+  subtitle,
+  backButton,
+}: {
+  title: string;
+  subtitle: string;
+  backButton?: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 18 }}>
+      {backButton}
+      <div>
+        <p
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "20px",
+            fontWeight: 700,
+            color: "#3d2c1e",
+            lineHeight: 1.2,
+          }}
+        >
+          {title}
+        </p>
+        <p style={{ fontSize: "12.5px", color: "#9e7a52", marginTop: 3 }}>{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page transition variants ─────────────────────────────────────────────────
+
+const pageVariants = {
+  enter: (direction: number) => ({
+    opacity: 0,
+    x: direction * 32,
+    filter: "blur(3px)",
+  }),
+  center: {
+    opacity: 1,
+    x: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
+  },
+  exit: (direction: number) => ({
+    opacity: 0,
+    x: direction * -32,
+    filter: "blur(3px)",
+    transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CounterSetup({ branches }: Props) {
-  // ── State ──────────────────────────────────────────────────────────────────
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [direction, setDirection] = useState(1);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [counters, setCounters] = useState<Counter[]>([]);
   const [selectedCounter, setSelectedCounter] = useState<Counter | null>(null);
@@ -298,8 +499,12 @@ export default function CounterSetup({ branches }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // ── Step 1 → 2: Fetch counters for selected branch ────────────────────────
+  const goTo = (s: 1 | 2 | 3, dir: number) => {
+    setDirection(dir);
+    setStep(s);
+  };
 
+  // Step 1 → 2
   const handleBranchSelect = useCallback(async (branch: Branch) => {
     setSelectedBranch(branch);
     setSelectedCounter(null);
@@ -307,19 +512,11 @@ export default function CounterSetup({ branches }: Props) {
     setLoadingCounters(true);
 
     try {
-      /**
-       * GET /api/branches/{id}/counters
-       * Returns: { data: Counter[] }
-       *
-       * Controller: CounterSetupController@counters
-       *   → Branch::findOrFail($id)
-       *   → $branch->counters()->active()->get(['id','branch_id','name','description'])
-       */
       const res = await axios.get<{ data: Counter[] }>(
         `/api/branches/${branch.id}/counters`
       );
       setCounters(res.data.data);
-      setStep(2);
+      goTo(2, 1);
     } catch (err: any) {
       toast.error(
         err.response?.data?.message ?? "Failed to load counters. Please try again."
@@ -329,19 +526,17 @@ export default function CounterSetup({ branches }: Props) {
     }
   }, []);
 
-  // ── Step 2 → 3: Counter selected ─────────────────────────────────────────
-
+  // Step 2 → 3
   const handleCounterSelect = useCallback((counter: Counter) => {
     setSelectedCounter(counter);
     setPin("");
-    setStep(3);
+    goTo(3, 1);
   }, []);
 
-  // ── Step 3: Submit PIN ────────────────────────────────────────────────────
-
+  // Submit PIN
   const handlePinSubmit = useCallback(async () => {
     if (!selectedCounter) return;
-    if (pin?.length < 4) {
+    if (pin.length < 4) {
       toast.error("Please enter your PIN");
       return;
     }
@@ -349,33 +544,11 @@ export default function CounterSetup({ branches }: Props) {
     setSubmitting(true);
 
     try {
-      /**
-       * POST /api/counter/activate-device
-       * Body:    { counter_id: number, pin: string }
-       * Returns: { device_token: string }
-       *
-       * Controller: CounterSetupController@activateDevice
-       *   → Validate counter_id + pin
-       *   → Hash::check($pin, $counter->pin)  ← server-side only, never client-side
-       *   → $counter->issueDeviceToken()       ← generates Str::random(64) + saves
-       *   → return ['device_token' => $token]
-       */
       const res = await axios.post<{ device_token: string }>(
         "/api/counter/activate-device",
-        {
-          counter_id: selectedCounter.id,
-          pin,
-        }
+        { counter_id: selectedCounter.id, pin }
       );
 
-      /**
-       * Store device identity in localStorage.
-       * These keys are read by CounterIdle.tsx and CounterFeedback.tsx
-       * to know which counter this device is without requiring a re-login.
-       *
-       * The device_token is sent as a header (X-Counter-Token) on every
-       * subsequent API request from this device to identify it server-side.
-       */
       localStorage.setItem("counter_device_token", res.data.device_token);
       localStorage.setItem("counter_id", String(selectedCounter.id));
       localStorage.setItem("counter_name", selectedCounter.name);
@@ -383,147 +556,179 @@ export default function CounterSetup({ branches }: Props) {
       localStorage.setItem("branch_name", selectedBranch!.name);
 
       setSuccess(true);
-
-      // Small delay so the user sees the success animation before redirect
-      setTimeout(() => {
-        /**
-         * Inertia visit to the idle screen.
-         * The idle screen will start polling for an active servicer session.
-         */
-        router.visit(route("counter.idle"));
-      }, 1800);
-
+      setTimeout(() => router.visit(route("counter.idle")), 1800);
     } catch (err: any) {
       const status = err.response?.status;
       const message = err.response?.data?.message;
 
       if (status === 422) {
-        // Validation error — most likely incorrect PIN
         toast.error(message ?? "Incorrect PIN. Please try again.");
       } else if (status === 403) {
-        // Counter is inactive or not found in this branch
         toast.error(message ?? "This counter is not available.");
       } else {
-        // Network or server error
         toast.error("Something went wrong. Please check your connection.");
       }
 
-      setPin(""); // Always clear PIN on failure for security
+      setPin("");
     } finally {
       setSubmitting(false);
     }
   }, [selectedCounter, selectedBranch, pin]);
 
-  // Auto-submit when PIN reaches 6 digits
-  const handlePinChange = useCallback((newPin: string) => {
-    setPin(newPin);
-    if (newPin?.length === 6) {
-      // Small delay so user sees all 6 dots filled before submitting
-      setTimeout(() => handlePinSubmit(), 300);
-    }
-  }, [handlePinSubmit]);
+  const handlePinChange = useCallback(
+    (newPin: string) => {
+      setPin(newPin);
+      if (newPin.length === 6) {
+        setTimeout(() => handlePinSubmit(), 280);
+      }
+    },
+    [handlePinSubmit]
+  );
 
-  // ── Back navigation ───────────────────────────────────────────────────────
-
-  const goBackToStep1 = () => {
-    setStep(1);
-    // Keep selectedBranch so it stays highlighted when going back
-  };
-
-  const goBackToStep2 = () => {
-    setStep(2);
-    setPin("");
-  };
+  const goBackToStep1 = () => goTo(1, -1);
+  const goBackToStep2 = () => { goTo(2, -1); setPin(""); };
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
       <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
         rel="stylesheet"
       />
 
       <Toaster
         position="top-center"
         toastOptions={{
+          duration: 3500,
           style: {
-            background: "#f8f1e8",
-            color: "#4c3829",
-            border: "1px solid #e3ceb8",
-            borderRadius: "12px",
+            background: "#fdf6ec",
+            color: "#3d2c1e",
+            border: "1.5px solid rgba(185,137,81,0.25)",
+            borderRadius: 14,
             fontFamily: "'DM Sans', sans-serif",
+            fontSize: "13.5px",
+            boxShadow: "0 8px 24px rgba(90,62,37,0.1)",
+          },
+          error: {
+            iconTheme: { primary: "#b98951", secondary: "#fdf6ec" },
           },
         }}
       />
 
-      {/* Full-screen background */}
-      <div
-        className="min-h-screen w-full flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden"
-        style={{ backgroundColor: "#f8f1e8" }}
-      >
-        {/* Ambient blobs */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          <div
-            className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-20"
-            style={{ background: "radial-gradient(circle,#d4a574,transparent 70%)", filter: "blur(70px)" }}
-          />
-          <div
-            className="absolute bottom-[-20%] right-[-10%] w-[400px] h-[400px] rounded-full opacity-15"
-            style={{ background: "radial-gradient(circle,#b98951,transparent 70%)", filter: "blur(70px)" }}
-          />
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `linear-gradient(rgba(90,62,37,.5) 1px,transparent 1px),
-                                linear-gradient(90deg,rgba(90,62,37,.5) 1px,transparent 1px)`,
-              backgroundSize: "60px 60px",
-            }}
-          />
-        </div>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes breathe { 0%,100% { opacity:.9; transform:scale(1); } 50% { opacity:.5; transform:scale(.92); } }
+        * { -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        button { outline: none; }
+        button:focus-visible {
+          outline: 2px solid #b98951;
+          outline-offset: 2px;
+          border-radius: 12px;
+        }
+      `}</style>
 
-        {/* Card */}
+      {/* Page background */}
+      <div
+        style={{
+          minHeight: "100vh",
+          width: "100%",
+          backgroundColor: "#faf4ec",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px 20px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Subtle texture overlay */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `
+              radial-gradient(ellipse 70% 60% at 15% 10%, rgba(185,137,81,0.1) 0%, transparent 60%),
+              radial-gradient(ellipse 50% 50% at 85% 85%, rgba(185,137,81,0.07) 0%, transparent 60%)
+            `,
+            pointerEvents: "none",
+          }}
+        />
+        {/* Grain texture */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: 0.018,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "repeat",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Main container */}
         <motion.div
-          initial={{ opacity: 0, y: 28, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 w-full max-w-md"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 420 }}
         >
-          {/* Header */}
-          <div className="text-center mb-8">
+          {/* ── Header ─────────────────────────────────────────────────────── */}
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            {/* Live badge */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5"
-              style={{ background: "rgba(185,137,81,0.08)", border: "1px solid rgba(185,137,81,0.2)" }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                padding: "6px 14px",
+                borderRadius: 100,
+                background: "rgba(185,137,81,0.1)",
+                border: "1px solid rgba(185,137,81,0.22)",
+                marginBottom: 16,
+              }}
             >
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: "#b98951", boxShadow: "0 0 8px #b98951", animation: "pulse 2s infinite" }}
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  backgroundColor: "#b98951",
+                  display: "block",
+                  animation: "breathe 2.2s ease-in-out infinite",
+                }}
               />
-              <span style={{
-                color: "#8f5f35",
-                fontFamily: "'DM Mono', monospace",
-                fontSize: "11px",
-                letterSpacing: ".1em",
-                textTransform: "uppercase",
-              }}>
+              <span
+                style={{
+                  color: "#8f5f35",
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: "10.5px",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                }}
+              >
                 Counter Setup
               </span>
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
               style={{
-                color: "#3d2c1e",
                 fontFamily: "'Cormorant Garamond', serif",
-                fontSize: "38px",
+                fontSize: "clamp(30px, 6vw, 40px)",
                 fontWeight: 700,
-                letterSpacing: "-.02em",
-                marginBottom: "6px",
+                color: "#2c1f12",
+                letterSpacing: "-0.02em",
+                lineHeight: 1.1,
+                marginBottom: 8,
               }}
             >
               Activate This Device
@@ -533,55 +738,55 @@ export default function CounterSetup({ branches }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              style={{ color: "#8f5f35", fontSize: "14px" }}
+              style={{ fontSize: "14px", color: "#9e7a52", lineHeight: 1.5 }}
             >
               Set up this counter to start collecting feedback
             </motion.p>
           </div>
 
-          {/* Step indicator */}
+          {/* ── Step indicator ──────────────────────────────────────────────── */}
           <StepIndicator current={step} />
 
-          {/* Card panel */}
-          <div
-            className="rounded-3xl p-7"
+          {/* ── Card ────────────────────────────────────────────────────────── */}
+          <motion.div
+            layout
             style={{
-              background: "rgba(255,255,255,0.7)",
-              border: "1px solid rgba(185,137,81,0.2)",
-              boxShadow: "0 10px 40px rgba(90,62,37,0.1)",
+              borderRadius: 24,
+              background: "rgba(255,255,255,0.75)",
+              backdropFilter: "blur(20px)",
+              border: "1.5px solid rgba(185,137,81,0.16)",
+              boxShadow:
+                "0 2px 4px rgba(90,62,37,0.04), 0 8px 24px rgba(90,62,37,0.08), 0 24px 48px rgba(90,62,37,0.06)",
+              padding: "28px 26px",
+              overflow: "hidden",
             }}
           >
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" custom={direction}>
 
-              {/* ── Step 1: Select Branch ──────────────────────────────────── */}
+              {/* ── Step 1: Select Branch ─────────────────────────────────── */}
               {step === 1 && !success && (
                 <motion.div
-                  key="s1"
-                  variants={stepVariants}
+                  key="step1"
+                  custom={direction}
+                  variants={pageVariants}
                   initial="enter"
                   animate="center"
                   exit="exit"
                 >
-                  <p style={{
-                    color: "#3d2c1e", fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: "20px", fontWeight: 700, marginBottom: "4px",
-                  }}>
-                    Select your branch
-                  </p>
-                  <p style={{ color: "#8f5f35", fontSize: "13px", marginBottom: "18px" }}>
-                    Which location is this device at?
-                  </p>
+                  <SectionHeader
+                    title="Select your branch"
+                    subtitle="Which location is this device at?"
+                  />
 
-                  {/* Branch list — from Inertia props (no loading state needed) */}
-                  {branches?.length === 0 ? (
-                    <div className="text-center py-8" style={{ color: "#9e8563" }}>
-                      <p style={{ fontSize: "36px", marginBottom: "10px" }}>🏢</p>
-                      <p style={{ fontSize: "14px" }}>No active branches found.</p>
-                      <p style={{ fontSize: "12px", marginTop: "4px" }}>Ask your admin to create branches first.</p>
-                    </div>
+                  {branches.length === 0 ? (
+                    <EmptyState
+                      icon="🏢"
+                      title="No active branches found"
+                      hint="Ask your admin to create branches first."
+                    />
                   ) : (
-                    <div className="flex flex-col gap-2.5">
-                      {branches?.map((b, i) => (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {branches.map((b, i) => (
                         <SelectCard
                           key={b.id}
                           index={i}
@@ -594,68 +799,56 @@ export default function CounterSetup({ branches }: Props) {
                     </div>
                   )}
 
-                  {/* Loading spinner shown while fetching counters */}
-                  {loadingCounters && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center justify-center gap-2 mt-5"
-                    >
-                      <Spinner />
-                      <span style={{ color: "#8f5f35", fontSize: "13px" }}>
-                        Loading counters...
-                      </span>
-                    </motion.div>
-                  )}
+                  <AnimatePresence>
+                    {loadingCounters && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 10,
+                          marginTop: 18,
+                          paddingTop: 4,
+                        }}
+                      >
+                        <Spinner size={14} />
+                        <span style={{ fontSize: "13px", color: "#9e7a52" }}>
+                          Loading counters…
+                        </span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )}
 
-              {/* ── Step 2: Select Counter ─────────────────────────────────── */}
+              {/* ── Step 2: Select Counter ────────────────────────────────── */}
               {step === 2 && !success && (
                 <motion.div
-                  key="s2"
-                  variants={stepVariants}
+                  key="step2"
+                  custom={direction}
+                  variants={pageVariants}
                   initial="enter"
                   animate="center"
                   exit="exit"
                 >
-                  {/* Back + title */}
-                  <div className="flex items-center gap-3 mb-5">
-                    <button
-                      onClick={goBackToStep1}
-                      style={{
-                        width: 32, height: 32, borderRadius: "50%",
-                        background: "rgba(185,137,81,0.08)",
-                        color: "#8f5f35",
-                        border: "none", cursor: "pointer", fontSize: "16px",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}
-                    >←</button>
-                    <div>
-                      <p style={{
-                        color: "#3d2c1e", fontFamily: "'Cormorant Garamond', serif",
-                        fontSize: "18px", fontWeight: 700
-                      }}>
-                        Select counter
-                      </p>
-                      <p style={{ color: "#8f5f35", fontSize: "12px" }}>
-                        Pick the counter to activate
-                      </p>
-                    </div>
-                  </div>
+                  <SectionHeader
+                    title="Select a counter"
+                    subtitle={`Available at ${selectedBranch?.name}`}
+                    backButton={<BackButton onClick={goBackToStep1} />}
+                  />
 
-                  {/* Counter list — fetched from API */}
-                  {counters?.length === 0 ? (
-                    <div className="text-center py-8" style={{ color: "#9e8563" }}>
-                      <p style={{ fontSize: "36px", marginBottom: "10px" }}>🖥️</p>
-                      <p style={{ fontSize: "14px" }}>No active counters in this branch.</p>
-                      <p style={{ fontSize: "12px", marginTop: "4px" }}>
-                        Ask your admin to create and activate counters.
-                      </p>
-                    </div>
+                  {counters.length === 0 ? (
+                    <EmptyState
+                      icon="🖥️"
+                      title="No active counters here"
+                      hint="Ask your admin to create and activate counters."
+                    />
                   ) : (
-                    <div className="flex flex-col gap-2.5">
-                      {counters?.map((c, i) => (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {counters.map((c, i) => (
                         <SelectCard
                           key={c.id}
                           index={i}
@@ -670,136 +863,210 @@ export default function CounterSetup({ branches }: Props) {
                 </motion.div>
               )}
 
-              {/* ── Step 3: Enter PIN ──────────────────────────────────────── */}
+              {/* ── Step 3: Enter PIN ─────────────────────────────────────── */}
               {step === 3 && !success && (
                 <motion.div
-                  key="s3"
-                  variants={stepVariants}
+                  key="step3"
+                  custom={direction}
+                  variants={pageVariants}
                   initial="enter"
                   animate="center"
                   exit="exit"
                 >
-                  {/* Back + title */}
-                  <div className="flex items-center gap-3 mb-6">
-                    <button
-                      onClick={goBackToStep2}
-                      disabled={submitting}
-                      style={{
-                        width: 32, height: 32, borderRadius: "50%",
-                        background: "rgba(185,137,81,0.08)",
-                        color: "#8f5f35",
-                        border: "none", cursor: submitting ? "not-allowed" : "pointer",
-                        fontSize: "16px", display: "flex",
-                        alignItems: "center", justifyContent: "center",
-                        opacity: submitting ? 0.4 : 1,
-                      }}
-                    >←</button>
-                    <div>
-                      <p style={{
-                        color: "#3d2c1e", fontFamily: "'Cormorant Garamond', serif",
-                        fontSize: "18px", fontWeight: 700
-                      }}>
-                        Enter counter PIN
-                      </p>
-                      <p style={{ color: "#8f5f35", fontSize: "12px" }}>
-                        4–6 digit PIN on the device
-                      </p>
-                    </div>
-                  </div>
-
-                  <PinKeypad
-                    pin={pin}
-                    onChange={handlePinChange}
-                    disabled={submitting}
+                  <SectionHeader
+                    title="Enter counter PIN"
+                    subtitle={`Activating ${selectedCounter?.name}`}
+                    backButton={
+                      <BackButton onClick={goBackToStep2} disabled={submitting} />
+                    }
                   />
 
-                  {/* Manual submit button for 4–5 digit PINs */}
+                  <div style={{ marginTop: 8 }}>
+                    <PinKeypad
+                      pin={pin}
+                      onChange={handlePinChange}
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  {/* Manual submit for 4–5 digit PINs */}
                   <AnimatePresence>
-                    {pin?.length >= 4 && pin?.length < 6 && !submitting && (
                       <motion.button
-                        initial={{ opacity: 0, y: 8 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
+                        exit={{ opacity: 0, y: 4 }}
                         onClick={handlePinSubmit}
-                        className="w-full mt-7 py-4 rounded-2xl font-semibold"
+                        disabled={!(pin.length >= 4 && pin.length < 6 && !submitting)}
                         style={{
-                          background: "#b98951",
-                          color: "#ffffff",
-                          fontFamily: "'Cormorant Garamond', serif",
-                          fontSize: "16px",
+                          width: "100%",
+                          marginTop: 24,
+                          padding: "14px",
+                          borderRadius: 16,
+                          background: "#3d2c1e",
+                          color: "#fdf6ec",
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: "15px",
+                          fontWeight: 600,
                           border: "none",
                           cursor: "pointer",
+                          letterSpacing: "0.01em",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
                         }}
                       >
-                        Activate Counter →
+                        Activate Counter
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path
+                            d="M3 8h10M9 4l4 4-4 4"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
                       </motion.button>
-                    )}
+                    {/* {pin.length >= 4 && pin.length < 6 && !submitting && (
+                    )} */}
                   </AnimatePresence>
 
                   {/* Submitting state */}
-                  {submitting && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center justify-center gap-3 mt-6"
-                    >
-                      <Spinner />
-                      <span style={{ color: "#8f5f35", fontSize: "13px" }}>
-                        Verifying PIN...
-                      </span>
-                    </motion.div>
-                  )}
+                  <AnimatePresence>
+                    {submitting && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 10,
+                          marginTop: 20,
+                        }}
+                      >
+                        <Spinner size={14} />
+                        <span style={{ fontSize: "13px", color: "#9e7a52" }}>
+                          Verifying PIN…
+                        </span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )}
 
-              {/* ── Success ────────────────────────────────────────────────── */}
+              {/* ── Success ───────────────────────────────────────────────── */}
               {success && (
                 <motion.div
-                  key="ok"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center gap-4 py-8 text-center"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    textAlign: "center",
+                    padding: "28px 16px",
+                    gap: 16,
+                  }}
                 >
+                  {/* Animated checkmark circle */}
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
-                    style={{ background: "rgba(185,137,81,0.15)", border: "2px solid #b98951" }}
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 22, delay: 0.05 }}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: "50%",
+                      background: "rgba(185,137,81,0.1)",
+                      border: "2px solid #b98951",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    ✓
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                      <motion.path
+                        d="M5 13l5.5 5.5L21 8"
+                        stroke="#b98951"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.45, delay: 0.2, ease: "easeOut" }}
+                      />
+                    </svg>
                   </motion.div>
-                  <div>
-                    <p style={{
-                      color: "#3d2c1e", fontFamily: "'Cormorant Garamond', serif",
-                      fontSize: "24px", fontWeight: 700, marginBottom: "6px",
-                    }}>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: "26px",
+                        fontWeight: 700,
+                        color: "#2c1f12",
+                        marginBottom: 6,
+                      }}
+                    >
                       Counter Activated!
                     </p>
-                    <p style={{ color: "#8f5f35", fontSize: "13px" }}>
-                      {selectedBranch?.name} — {selectedCounter?.name}
+                    <p style={{ fontSize: "14px", color: "#8f5f35", marginBottom: 4 }}>
+                      {selectedBranch?.name} · {selectedCounter?.name}
                     </p>
-                    <p style={{ color: "#a89677", fontSize: "12px", marginTop: "4px" }}>
-                      Redirecting to idle screen...
+                    <p style={{ fontSize: "12px", color: "rgba(61,44,30,0.35)" }}>
+                      Redirecting to idle screen…
                     </p>
-                  </div>
+                  </motion.div>
+
+                  {/* Progress bar */}
+                  <motion.div
+                    style={{
+                      width: "100%",
+                      height: 3,
+                      borderRadius: 2,
+                      backgroundColor: "rgba(185,137,81,0.15)",
+                      overflow: "hidden",
+                      marginTop: 8,
+                    }}
+                  >
+                    <motion.div
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 1.6, ease: "linear" }}
+                      style={{ height: "100%", backgroundColor: "#b98951", borderRadius: 2 }}
+                    />
+                  </motion.div>
                 </motion.div>
               )}
 
             </AnimatePresence>
-          </div>
+          </motion.div>
 
-          {/* Footer */}
-          <p
-            className="text-center mt-4"
-            style={{ color: "rgba(185,137,81,0.4)", fontFamily: "'DM Mono', monospace", fontSize: "11px" }}
+          {/* ── Footer ─────────────────────────────────────────────────────── */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            style={{
+              textAlign: "center",
+              marginTop: 16,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: "10.5px",
+              color: "rgba(185,137,81,0.35)",
+              letterSpacing: "0.04em",
+            }}
           >
-            This device will remember its counter after setup.
-          </p>
+            This device will remember its counter after setup
+          </motion.p>
         </motion.div>
       </div>
-
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
     </>
   );
 }
