@@ -30,6 +30,7 @@ class CounterController extends Controller
                     'name' => $counter->name,
                     'description' => $counter->description,
                     'is_active' => $counter->is_active,
+                    'device_token' => $counter->device_token,
                     'is_occupied' => $counter->isOccupied(),
                     'current_servicer' => $counter->currentServicer()?->name,
                     'feedback_count' => $counter->feedbacks_count,

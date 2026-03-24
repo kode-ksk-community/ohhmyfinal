@@ -54,9 +54,9 @@ class ServicerDashboardController extends Controller
         ]);
 
         // Update counter status to idle
-        $session->counter->update([
-            'is_active' => false,
-        ]);
+        // $session->counter->update([
+        //     'is_active' => false,
+        // ]);
 
         return response()->json([
             'message' => 'Session terminated successfully',

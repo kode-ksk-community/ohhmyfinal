@@ -647,13 +647,13 @@ export default function AdminUsers({ users: initialUsers, branches }: Props) {
                             fontFamily: "'DM Sans',sans-serif", fontSize: "12px",
                             color: "#374151", cursor: "pointer"
                           }}>Edit</button>
-                        <button onClick={() => handleResetPassword(user)}
+                        {/* <button onClick={() => handleResetPassword(user)}
                           style={{
                             padding: "6px 10px", borderRadius: 8,
                             border: "1px solid #e2e8f0", background: "transparent",
                             fontSize: "12px", color: "#64748b", cursor: "pointer"
-                          }}>🔑</button>
-                        {user.role === "servicer" && (
+                          }}>🔑</button> */}
+                        {/* {user.role === "servicer" && (
                           <button onClick={() => handleGenerateQR(user)}
                             style={{
                               padding: "6px 10px", borderRadius: 8,
@@ -664,7 +664,7 @@ export default function AdminUsers({ users: initialUsers, branches }: Props) {
                             }}>
                             {user.has_qr_token ? "📱 QR" : "+ QR"}
                           </button>
-                        )}
+                        )} */}
                       </div>
                     </td>
                   </motion.tr>
