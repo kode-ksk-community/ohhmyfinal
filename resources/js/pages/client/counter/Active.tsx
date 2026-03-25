@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { router } from "@inertiajs/react";
+import { router, Head } from "@inertiajs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import QRCode from "qrcode";
@@ -594,7 +594,7 @@ function IdleScreen({
 
 // ─── Feedback Screen ──────────────────────────────────────────────────────────
 
-function FeedbackScreen({ session, onComplete }: { session: ActiveSession; onComplete: () => void }) {
+function FeedbackScreen({ session, onComplete, deviceToken }: { session: ActiveSession; onComplete: () => void; deviceToken: string }) {
   const [state, setState] = useState<FeedbackState>({
     selectedRating: null,
     selectedTagIds: [],
@@ -612,10 +612,9 @@ function FeedbackScreen({ session, onComplete }: { session: ActiveSession; onCom
   useEffect(() => {
     const fetch = async () => {
       try {
-        const token = localStorage.getItem("counter_device_token");
         const res   = await axios.get<{ servicer: ServicerInfo; tags: Tag[] }>(
           "/api/counter/feedback-data",
-          { headers: { "X-Counter-Token": token } }
+          { headers: { "X-Counter-Token": deviceToken } }
         );
         if (res.data.servicer) setServicer(res.data.servicer);
         setTags(res.data.tags ?? []);
@@ -646,17 +645,17 @@ function FeedbackScreen({ session, onComplete }: { session: ActiveSession; onCom
     setState((s) => ({ ...s, submitting: true }));
     setSubmitError(null);
     try {
-      const token = localStorage.getItem("counter_device_token");
       const res   = await axios.post(
         "/api/counter/feedback",
         { rating: state.selectedRating.value, tag_ids: state.selectedTagIds, comment: state.comment.trim() || null },
-        { headers: { "X-Counter-Token": token } }
+        { headers: { "X-Counter-Token": deviceToken } }
       );
       if (res.status === 201 && res.data.success) {
         setState((s) => ({ ...s, submitting: false, step: "done" }));
+        
+        // Wait for thank you message, then reset to allow another feedback
         setTimeout(() => {
           setState({ selectedRating: null, selectedTagIds: [], comment: "", step: "rate", submitting: false });
-          onComplete();
         }, THANK_YOU_DURATION * 1000);
       } else {
         setSubmitError(res.data.message || "Unable to submit feedback.");
@@ -673,8 +672,7 @@ function FeedbackScreen({ session, onComplete }: { session: ActiveSession; onCom
     if (endingSession) return;
     setEndingSession(true);
     try {
-      const token = localStorage.getItem("counter_device_token");
-      const res   = await axios.post("/api/counter/session/end", {}, { headers: { "X-Counter-Token": token } });
+      const res   = await axios.post("/api/counter/session/end", {}, { headers: { "X-Counter-Token": deviceToken } });
       if (res.data.success) { onComplete(); return; }
       setSubmitError(res.data.message || "Unable to end session.");
     } catch (err: unknown) {
@@ -1350,6 +1348,12 @@ export default function CounterActive() {
   const [isInitialLoad,   setIsInitialLoad]   = useState(true);
 
   const deviceTokenRef = useRef<string | null>(null);
+  const pollingPausedRef = useRef(pollingPaused);
+  const activeSessionRef = useRef(activeSession);
+
+  // Sync refs with state
+  useEffect(() => { pollingPausedRef.current = pollingPaused; }, [pollingPaused]);
+  useEffect(() => { activeSessionRef.current = activeSession; }, [activeSession]);
 
   useEffect(() => {
     const info = readDeviceInfo();
@@ -1358,37 +1362,65 @@ export default function CounterActive() {
     deviceTokenRef.current = info.deviceToken;
   }, []);
 
-  const pollSession = useCallback(async () => {
-    const token = deviceTokenRef.current;
-    if (!token || pollingPaused) return;
-    try {
-      const res = await apiCall(
-        () => axios.get<{ active: boolean; session?: ActiveSession }>(
-          "/api/counter/session/status",
-          { headers: { "X-Counter-Token": token }, timeout: 8_000 }
-        ),
-        { onRetry: (attempt, error) => { console.warn(`Poll retry ${attempt}:`, error); setRetryCount(attempt); } }
-      );
-      setLastChecked(new Date());
-      setConnectionError(false);
-      setRetryCount(0);
-      setIsInitialLoad(false);
-      if (res.data.active && res.data.session) setActiveSession(res.data.session);
-      else if (activeSession) { setActiveSession(null); setPollingPaused(false); }
-    } catch (error: unknown) {
-      const e = error as ApiError;
-      if (e.code === "401") { clearDeviceState(); router.visit(route("counter.setup")); return; }
-      setConnectionError(true);
-      setIsInitialLoad(false);
-    }
-  }, [pollingPaused, apiCall, activeSession, isOnline]);
+  // 30-minute inactivity timer to refresh page and prevent lag
+  useEffect(() => {
+    let inactivityTimer: NodeJS.Timeout;
+    const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        console.warn("Page inactive for 30 minutes. Refreshing to clear cache and prevent lag.");
+        window.location.reload();
+      }, INACTIVITY_TIMEOUT);
+    };
+
+    const handleActivity = () => resetInactivityTimer();
+
+    // Listen for user activity
+    const events = ["mousemove", "keydown", "touchstart", "click", "scroll"];
+    events.forEach((event) => window.addEventListener(event, handleActivity, { passive: true }));
+
+    resetInactivityTimer();
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      events.forEach((event) => window.removeEventListener(event, handleActivity));
+    };
+  }, []);
 
   useEffect(() => {
     if (!deviceInfo) return;
+
+    const pollSession = async () => {
+      const token = deviceTokenRef.current;
+      if (!token || pollingPausedRef.current) return;
+      try {
+        const res = await apiCall(
+          () => axios.get<{ active: boolean; session?: ActiveSession }>(
+            "/api/counter/session/status",
+            { headers: { "X-Counter-Token": token }, timeout: 8_000 }
+          ),
+          { onRetry: (attempt) => { setRetryCount(attempt); } }
+        );
+        setLastChecked(new Date());
+        setConnectionError(false);
+        setRetryCount(0);
+        setIsInitialLoad(false);
+        if (res.data.active && res.data.session) setActiveSession(res.data.session);
+        else if (activeSessionRef.current) { setActiveSession(null); setPollingPaused(false); }
+      } catch (error: unknown) {
+        const e = error as ApiError;
+        if (e.code === "401") { clearDeviceState(); router.visit(route("counter.setup")); return; }
+        setConnectionError(true);
+        setIsInitialLoad(false);
+      }
+    };
+
     pollSession();
     const interval = setInterval(pollSession, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [deviceInfo, pollSession]);
+  }, [deviceInfo, apiCall]);
 
   const handleReset           = () => { setPollingPaused(true); clearDeviceState(); router.visit(route("counter.setup")); };
   const handleFeedbackComplete = () => { setActiveSession(null); setPollingPaused(false); };
@@ -1397,6 +1429,7 @@ export default function CounterActive() {
 
   return (
     <>
+      <Head title="Counter Active" />
       <link
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Noto+Sans+Khmer:wght@400;600;700&display=swap"
         rel="stylesheet"
@@ -1417,7 +1450,7 @@ export default function CounterActive() {
 
       <AnimatePresence mode="wait">
         {activeSession ? (
-          <FeedbackScreen key="feedback" session={activeSession} onComplete={handleFeedbackComplete} />
+          <FeedbackScreen key="feedback" session={activeSession} onComplete={handleFeedbackComplete} deviceToken={deviceTokenRef.current!} />
         ) : (
           <IdleScreen
             key="idle"

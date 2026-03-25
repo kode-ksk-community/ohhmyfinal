@@ -24,6 +24,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Head } from "@inertiajs/react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../Layouts/Adminlayout";
@@ -403,6 +404,7 @@ export default function ManagerDashboard({ stats, initialRange }: Props) {
 
     return (
         <AdminLayout title="Admin Dashboard" active="dashboard">
+            <Head title="Admin Dashboard" />
             <Toaster position="top-right" toastOptions={{
                 style: { fontFamily: "'DM Sans', sans-serif", borderRadius: "12px", fontSize: "13px" },
             }} />

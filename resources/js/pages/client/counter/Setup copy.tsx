@@ -55,10 +55,10 @@
  */
 
 import { useState, useCallback } from "react";
-import { router }                from "@inertiajs/react";
+import { router, Head } from "@inertiajs/react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios                     from "axios";
-import toast, { Toaster }        from "react-hot-toast";
+import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,7 +87,7 @@ interface Props {
 // ─── Animation variants ───────────────────────────────────────────────────────
 
 const stepVariants = {
-  enter:  { opacity: 0, x: 48,  filter: "blur(4px)" },
+  enter: { opacity: 0, x: 48, filter: "blur(4px)" },
   center: {
     opacity: 1, x: 0, filter: "blur(0px)",
     transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
@@ -99,7 +99,7 @@ const stepVariants = {
 };
 
 const cardVariants = {
-  hidden:  { opacity: 0, y: 20, scale: 0.97 },
+  hidden: { opacity: 0, y: 20, scale: 0.97 },
   visible: (i: number) => ({
     opacity: 1, y: 0, scale: 1,
     transition: { delay: i * 0.07, duration: 0.35, ease: [0.22, 1, 0.36, 1] },
@@ -113,17 +113,17 @@ function StepIndicator({ current }: { current: number }) {
   return (
     <div className="flex items-center gap-3 mb-10 justify-center">
       {steps?.map((label, i) => {
-        const step     = i + 1;
+        const step = i + 1;
         const isActive = step === current;
-        const isDone   = step < current;
+        const isDone = step < current;
         return (
           <div key={label} className="flex items-center gap-3">
             <div className="flex flex-col items-center gap-1">
               <motion.div
                 animate={{
                   backgroundColor: isDone ? "#10b981" : isActive ? "#f8fafc" : "transparent",
-                  borderColor:     isDone ? "#10b981" : isActive ? "#f8fafc" : "rgba(248,250,252,0.2)",
-                  scale:           isActive ? 1.12 : 1,
+                  borderColor: isDone ? "#10b981" : isActive ? "#f8fafc" : "rgba(248,250,252,0.2)",
+                  scale: isActive ? 1.12 : 1,
                 }}
                 transition={{ duration: 0.3 }}
                 className="w-9 h-9 rounded-full border-2 flex items-center justify-center"
@@ -133,15 +133,17 @@ function StepIndicator({ current }: { current: number }) {
                     className="text-white text-sm font-bold">✓</motion.span>
                 ) : (
                   <span className="text-sm font-bold"
-                    style={{ color: isActive ? "#0f172a" : "rgba(248,250,252,0.3)",
-                             fontFamily: "'DM Mono', monospace" }}>
+                    style={{
+                      color: isActive ? "#0f172a" : "rgba(248,250,252,0.3)",
+                      fontFamily: "'DM Mono', monospace"
+                    }}>
                     {step}
                   </span>
                 )}
               </motion.div>
               <span className="text-xs tracking-widest uppercase"
                 style={{
-                  color:      isActive ? "#f8fafc" : isDone ? "#10b981" : "rgba(248,250,252,0.3)",
+                  color: isActive ? "#f8fafc" : isDone ? "#10b981" : "rgba(248,250,252,0.3)",
                   fontFamily: "'DM Mono', monospace",
                   fontWeight: 500,
                 }}>
@@ -181,7 +183,7 @@ function SelectCard({ label, sublabel, selected, onClick, index }: {
       onClick={onClick}
       className="w-full text-left px-5 py-4 rounded-2xl border-2 transition-colors"
       style={{
-        borderColor:     selected ? "#f8fafc" : "rgba(248,250,252,0.1)",
+        borderColor: selected ? "#f8fafc" : "rgba(248,250,252,0.1)",
         backgroundColor: selected ? "rgba(248,250,252,0.1)" : "rgba(248,250,252,0.03)",
       }}
     >
@@ -189,7 +191,7 @@ function SelectCard({ label, sublabel, selected, onClick, index }: {
         <div>
           <p className="text-base font-semibold"
             style={{
-              color:      selected ? "#f8fafc" : "rgba(248,250,252,0.65)",
+              color: selected ? "#f8fafc" : "rgba(248,250,252,0.65)",
               fontFamily: "'Syne', sans-serif",
             }}>
             {label}
@@ -218,7 +220,7 @@ function PinKeypad({ pin, onChange, disabled }: {
   onChange: (pin: string) => void;
   disabled?: boolean;
 }) {
-  const keys = ["1","2","3","4","5","6","7","8","9","","0","del"];
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
 
   const handleKey = (key: string) => {
     if (disabled) return;
@@ -234,7 +236,7 @@ function PinKeypad({ pin, onChange, disabled }: {
           <motion.div
             key={i}
             animate={{
-              scale:           i === pin?.length - 1 ? [1, 1.35, 1] : 1,
+              scale: i === pin?.length - 1 ? [1, 1.35, 1] : 1,
               backgroundColor: i < pin?.length ? "#f8fafc" : "rgba(248,250,252,0.15)",
             }}
             transition={{ duration: 0.15 }}
@@ -257,12 +259,12 @@ function PinKeypad({ pin, onChange, disabled }: {
               className="h-14 rounded-2xl flex items-center justify-center"
               style={{
                 backgroundColor: key === "del" ? "rgba(248,250,252,0.05)" : "rgba(248,250,252,0.08)",
-                border:   "1px solid rgba(248,250,252,0.1)",
-                color:    disabled ? "rgba(248,250,252,0.3)" : "rgba(248,250,252,0.9)",
+                border: "1px solid rgba(248,250,252,0.1)",
+                color: disabled ? "rgba(248,250,252,0.3)" : "rgba(248,250,252,0.9)",
                 fontSize: key === "del" ? "15px" : "20px",
                 fontFamily: key === "del" ? "inherit" : "'DM Mono', monospace",
-                cursor:   disabled ? "not-allowed" : "pointer",
-                opacity:  disabled ? 0.5 : 1,
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.5 : 1,
               }}
             >
               {key === "del" ? "⌫" : key}
@@ -287,14 +289,14 @@ function Spinner() {
 
 export default function CounterSetup({ branches }: Props) {
   // ── State ──────────────────────────────────────────────────────────────────
-  const [step,            setStep]            = useState<1 | 2 | 3>(1);
-  const [selectedBranch,  setSelectedBranch]  = useState<Branch | null>(null);
-  const [counters,        setCounters]        = useState<Counter[]>([]);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [counters, setCounters] = useState<Counter[]>([]);
   const [selectedCounter, setSelectedCounter] = useState<Counter | null>(null);
-  const [pin,             setPin]             = useState("");
+  const [pin, setPin] = useState("");
   const [loadingCounters, setLoadingCounters] = useState(false);
-  const [submitting,      setSubmitting]      = useState(false);
-  const [success,         setSuccess]         = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   // ── Step 1 → 2: Fetch counters for selected branch ────────────────────────
 
@@ -375,10 +377,10 @@ export default function CounterSetup({ branches }: Props) {
        * subsequent API request from this device to identify it server-side.
        */
       localStorage.setItem("counter_device_token", res.data.device_token);
-      localStorage.setItem("counter_id",           String(selectedCounter.id));
-      localStorage.setItem("counter_name",          selectedCounter.name);
-      localStorage.setItem("branch_id",             String(selectedBranch!.id));
-      localStorage.setItem("branch_name",           selectedBranch!.name);
+      localStorage.setItem("counter_id", String(selectedCounter.id));
+      localStorage.setItem("counter_name", selectedCounter.name);
+      localStorage.setItem("branch_id", String(selectedBranch!.id));
+      localStorage.setItem("branch_name", selectedBranch!.name);
 
       setSuccess(true);
 
@@ -392,7 +394,7 @@ export default function CounterSetup({ branches }: Props) {
       }, 1800);
 
     } catch (err: any) {
-      const status  = err.response?.status;
+      const status = err.response?.status;
       const message = err.response?.data?.message;
 
       if (status === 422) {
@@ -437,6 +439,7 @@ export default function CounterSetup({ branches }: Props) {
 
   return (
     <>
+      <Head title="Counter Setup" />
       <link
         href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap"
         rel="stylesheet"
@@ -446,11 +449,11 @@ export default function CounterSetup({ branches }: Props) {
         position="top-center"
         toastOptions={{
           style: {
-            background:  "#1e293b",
-            color:       "#f8fafc",
-            border:      "1px solid rgba(248,250,252,0.1)",
+            background: "#1e293b",
+            color: "#f8fafc",
+            border: "1px solid rgba(248,250,252,0.1)",
             borderRadius: "12px",
-            fontFamily:  "'DM Sans', sans-serif",
+            fontFamily: "'DM Sans', sans-serif",
           },
         }}
       />
@@ -475,7 +478,7 @@ export default function CounterSetup({ branches }: Props) {
             style={{
               backgroundImage: `linear-gradient(rgba(248,250,252,.5) 1px,transparent 1px),
                                 linear-gradient(90deg,rgba(248,250,252,.5) 1px,transparent 1px)`,
-              backgroundSize:  "60px 60px",
+              backgroundSize: "60px 60px",
             }}
           />
         </div>
@@ -501,9 +504,9 @@ export default function CounterSetup({ branches }: Props) {
                 style={{ boxShadow: "0 0 8px #34d399", animation: "pulse 2s infinite" }}
               />
               <span style={{
-                color:       "rgba(248,250,252,0.5)",
-                fontFamily:  "'DM Mono', monospace",
-                fontSize:    "11px",
+                color: "rgba(248,250,252,0.5)",
+                fontFamily: "'DM Mono', monospace",
+                fontSize: "11px",
                 letterSpacing: ".1em",
                 textTransform: "uppercase",
               }}>
@@ -516,12 +519,12 @@ export default function CounterSetup({ branches }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
               style={{
-                color:         "#f8fafc",
-                fontFamily:    "'Syne', sans-serif",
-                fontSize:      "30px",
-                fontWeight:    800,
+                color: "#f8fafc",
+                fontFamily: "'Syne', sans-serif",
+                fontSize: "30px",
+                fontWeight: 800,
                 letterSpacing: "-.02em",
-                marginBottom:  "6px",
+                marginBottom: "6px",
               }}
             >
               Activate This Device
@@ -544,8 +547,8 @@ export default function CounterSetup({ branches }: Props) {
           <div
             className="rounded-3xl p-7"
             style={{
-              background:    "rgba(248,250,252,0.04)",
-              border:        "1px solid rgba(248,250,252,0.08)",
+              background: "rgba(248,250,252,0.04)",
+              border: "1px solid rgba(248,250,252,0.08)",
               backdropFilter: "blur(20px)",
             }}
           >
@@ -630,8 +633,10 @@ export default function CounterSetup({ branches }: Props) {
                       }}
                     >←</button>
                     <div>
-                      <p style={{ color: "#f8fafc", fontFamily: "'Syne', sans-serif",
-                        fontSize: "17px", fontWeight: 700 }}>
+                      <p style={{
+                        color: "#f8fafc", fontFamily: "'Syne', sans-serif",
+                        fontSize: "17px", fontWeight: 700
+                      }}>
                         Select counter
                       </p>
                       <p style={{ color: "rgba(248,250,252,0.4)", fontSize: "12px" }}>
@@ -691,8 +696,10 @@ export default function CounterSetup({ branches }: Props) {
                       }}
                     >←</button>
                     <div>
-                      <p style={{ color: "#f8fafc", fontFamily: "'Syne', sans-serif",
-                        fontSize: "17px", fontWeight: 700 }}>
+                      <p style={{
+                        color: "#f8fafc", fontFamily: "'Syne', sans-serif",
+                        fontSize: "17px", fontWeight: 700
+                      }}>
                         Enter counter PIN
                       </p>
                       <p style={{ color: "rgba(248,250,252,0.4)", fontSize: "12px" }}>
@@ -718,12 +725,12 @@ export default function CounterSetup({ branches }: Props) {
                         onClick={handlePinSubmit}
                         className="w-full mt-7 py-4 rounded-2xl font-semibold"
                         style={{
-                          background:  "#f8fafc",
-                          color:       "#0a0f1e",
-                          fontFamily:  "'Syne', sans-serif",
-                          fontSize:    "14px",
-                          border:      "none",
-                          cursor:      "pointer",
+                          background: "#f8fafc",
+                          color: "#0a0f1e",
+                          fontFamily: "'Syne', sans-serif",
+                          fontSize: "14px",
+                          border: "none",
+                          cursor: "pointer",
                         }}
                       >
                         Activate Counter →

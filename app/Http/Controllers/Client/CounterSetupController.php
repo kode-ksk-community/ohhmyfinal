@@ -8,6 +8,7 @@ use App\Models\Counter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -138,6 +139,7 @@ class CounterSetupController extends Controller
      */
     public function activateDevice(Request $request): JsonResponse
     {
+        Log::debug($request->all());
         // Validate request structure
         $validated = $request->validate([
             'counter_id' => ['required', 'integer', 'exists:counters,id'],
@@ -160,13 +162,18 @@ class CounterSetupController extends Controller
             ], 403);
         }
 
+        Log::info("Attempting to activate device with PIN:", ['pin' => $validated['pin']]);
+        Log::info("Counter's stored PIN hash:", ['hash' => $counter->pin]);
+
+        Log::info(Hash::check($validated['pin'], $counter->pin));
+
         // Verify the PIN against the hashed value stored in the database
         // This is the ONLY place PIN verification happens — never client-side
-        // if (! Hash::check($validated['pin'], $counter->pin)) {
-        //     return response()->json([
-        //         'message' => 'Incorrect PIN. Please try again.',
-        //     ], 422);
-        // }
+        if (! Hash::check($validated['pin'], $counter->pin)) {
+            return response()->json([
+                'message' => 'Incorrect PIN. Please try again.',
+            ], 422);
+        }
 
         // Generate a new device token and persist it to the counter record.
         // The Counter model's issueDeviceToken() method handles this:

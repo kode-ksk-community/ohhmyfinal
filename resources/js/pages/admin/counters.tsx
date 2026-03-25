@@ -10,7 +10,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { router } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../Layouts/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -255,6 +255,7 @@ export default function AdminCounters({ counters, branches }: Props) {
 
   return (
     <AdminLayout title="Counter Management" active="counters">
+      <Head title="Counter Management" />
       <Toaster position="top-right" />
 
       {/* Header Actions */}

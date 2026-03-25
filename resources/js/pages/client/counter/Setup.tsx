@@ -12,7 +12,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { router } from "@inertiajs/react";
+import { router, Head } from "@inertiajs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -56,13 +56,13 @@ function StepIndicator({ current }: { current: number }) {
                   backgroundColor: isDone
                     ? "#b98951"
                     : isActive
-                    ? "#3d2c1e"
-                    : "transparent",
+                      ? "#3d2c1e"
+                      : "transparent",
                   borderColor: isDone
                     ? "#b98951"
                     : isActive
-                    ? "#3d2c1e"
-                    : "rgba(61,44,30,0.2)",
+                      ? "#3d2c1e"
+                      : "rgba(61,44,30,0.2)",
                   scale: isActive ? 1.1 : 1,
                 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
@@ -111,8 +111,8 @@ function StepIndicator({ current }: { current: number }) {
                   color: isActive
                     ? "#3d2c1e"
                     : isDone
-                    ? "#b98951"
-                    : "rgba(61,44,30,0.3)",
+                      ? "#b98951"
+                      : "rgba(61,44,30,0.3)",
                   transition: "color 0.3s",
                 }}
               >
@@ -578,9 +578,9 @@ export default function CounterSetup({ branches }: Props) {
   const handlePinChange = useCallback(
     (newPin: string) => {
       setPin(newPin);
-      if (newPin.length === 6) {
-        setTimeout(() => handlePinSubmit(), 280);
-      }
+      // if (newPin.length === 6) {
+      //   setTimeout(() => handlePinSubmit(), 500);
+      // }
     },
     [handlePinSubmit]
   );
@@ -592,6 +592,7 @@ export default function CounterSetup({ branches }: Props) {
 
   return (
     <>
+      <Head title="Counter Setup" />
       <link
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
         rel="stylesheet"
@@ -891,42 +892,42 @@ export default function CounterSetup({ branches }: Props) {
 
                   {/* Manual submit for 4–5 digit PINs */}
                   <AnimatePresence>
-                      <motion.button
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 4 }}
-                        onClick={handlePinSubmit}
-                        disabled={!(pin.length >= 4 && pin.length < 6 && !submitting)}
-                        style={{
-                          width: "100%",
-                          marginTop: 24,
-                          padding: "14px",
-                          borderRadius: 16,
-                          background: "#3d2c1e",
-                          color: "#fdf6ec",
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: "15px",
-                          fontWeight: 600,
-                          border: "none",
-                          cursor: "pointer",
-                          letterSpacing: "0.01em",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 8,
-                        }}
-                      >
-                        Activate Counter
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path
-                            d="M3 8h10M9 4l4 4-4 4"
-                            stroke="currentColor"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </motion.button>
+                    <motion.button
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      onClick={handlePinSubmit}
+                      disabled={!((pin.length >= 4 && pin.length <= 6) || submitting)}
+                      style={{
+                        width: "100%",
+                        marginTop: 24,
+                        padding: "14px",
+                        borderRadius: 16,
+                        background: "#3d2c1e",
+                        color: "#fdf6ec",
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        border: "none",
+                        cursor: "pointer",
+                        letterSpacing: "0.01em",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      Activate Counter
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path
+                          d="M3 8h10M9 4l4 4-4 4"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </motion.button>
                     {/* {pin.length >= 4 && pin.length < 6 && !submitting && (
                     )} */}
                   </AnimatePresence>

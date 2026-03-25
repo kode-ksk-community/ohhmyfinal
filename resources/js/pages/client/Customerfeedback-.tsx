@@ -19,6 +19,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Head } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,11 +50,11 @@ interface RatingLevel {
 // ─── 🔧 Static Mock Data ──────────────────────────────────────────────────────
 
 const RATINGS: RatingLevel[] = [
-  { value: 1, emoji: "😡", label: "Very Bad",  labelKh: "អន់ខ្លាំង",   bg: "#fff1f0", accent: "#ef4444", text: "#7f1d1d" },
-  { value: 2, emoji: "😞", label: "Bad",        labelKh: "អន់",         bg: "#fff7ed", accent: "#f97316", text: "#7c2d12" },
-  { value: 3, emoji: "😐", label: "Neutral",    labelKh: "មធ្យម",       bg: "#fefce8", accent: "#eab308", text: "#713f12" },
-  { value: 4, emoji: "😊", label: "Good",       labelKh: "ល្អ",         bg: "#f0fdf4", accent: "#22c55e", text: "#14532d" },
-  { value: 5, emoji: "😍", label: "Excellent",  labelKh: "ល្អណាស់",     bg: "#eff6ff", accent: "#3b82f6", text: "#1e3a8a" },
+  { value: 1, emoji: "😡", label: "Very Bad", labelKh: "អន់ខ្លាំង", bg: "#fff1f0", accent: "#ef4444", text: "#7f1d1d" },
+  { value: 2, emoji: "😞", label: "Bad", labelKh: "អន់", bg: "#fff7ed", accent: "#f97316", text: "#7c2d12" },
+  { value: 3, emoji: "😐", label: "Neutral", labelKh: "មធ្យម", bg: "#fefce8", accent: "#eab308", text: "#713f12" },
+  { value: 4, emoji: "😊", label: "Good", labelKh: "ល្អ", bg: "#f0fdf4", accent: "#22c55e", text: "#14532d" },
+  { value: 5, emoji: "😍", label: "Excellent", labelKh: "ល្អណាស់", bg: "#eff6ff", accent: "#3b82f6", text: "#1e3a8a" },
 ];
 
 const MOCK_SERVICER: Servicer = {
@@ -63,15 +64,15 @@ const MOCK_SERVICER: Servicer = {
 };
 
 const MOCK_TAGS: Tag[] = [
-  { id: 1, name: "Friendly Staff",     color: "#22c55e", sentiment: "positive" },
-  { id: 2, name: "Helpful",            color: "#22c55e", sentiment: "positive" },
-  { id: 3, name: "Fast Service",       color: "#3b82f6", sentiment: "positive" },
-  { id: 4, name: "Clean Environment",  color: "#06b6d4", sentiment: "positive" },
-  { id: 5, name: "Professional",       color: "#8b5cf6", sentiment: "positive" },
-  { id: 6, name: "Slow Service",       color: "#f97316", sentiment: "negative" },
-  { id: 7, name: "Long Wait",          color: "#f97316", sentiment: "negative" },
-  { id: 8, name: "Rude Staff",         color: "#ef4444", sentiment: "negative" },
-  { id: 9, name: "Need Improvement",   color: "#6b7280", sentiment: "neutral"  },
+  { id: 1, name: "Friendly Staff", color: "#22c55e", sentiment: "positive" },
+  { id: 2, name: "Helpful", color: "#22c55e", sentiment: "positive" },
+  { id: 3, name: "Fast Service", color: "#3b82f6", sentiment: "positive" },
+  { id: 4, name: "Clean Environment", color: "#06b6d4", sentiment: "positive" },
+  { id: 5, name: "Professional", color: "#8b5cf6", sentiment: "positive" },
+  { id: 6, name: "Slow Service", color: "#f97316", sentiment: "negative" },
+  { id: 7, name: "Long Wait", color: "#f97316", sentiment: "negative" },
+  { id: 8, name: "Rude Staff", color: "#ef4444", sentiment: "negative" },
+  { id: 9, name: "Need Improvement", color: "#6b7280", sentiment: "neutral" },
 ];
 
 // Thank-you screen auto-reset duration in seconds
@@ -133,8 +134,10 @@ function EmojiButton({ rating, selected, onSelect }: {
       <motion.span
         animate={{ color: selected ? rating.accent : "#9ca3af", fontWeight: selected ? 700 : 400 }}
         transition={{ duration: 0.2 }}
-        style={{ fontSize: "12px", fontFamily: "'DM Sans', sans-serif",
-          letterSpacing: "0.01em", whiteSpace: "nowrap" }}
+        style={{
+          fontSize: "12px", fontFamily: "'DM Sans', sans-serif",
+          letterSpacing: "0.01em", whiteSpace: "nowrap"
+        }}
       >
         {rating.label}
       </motion.span>
@@ -159,7 +162,7 @@ function TagChip({ tag, selected, onToggle }: {
       style={{
         fontFamily: "'DM Sans', sans-serif",
         background: selected ? tag.color : "rgba(0,0,0,0.04)",
-        color:  selected ? "#fff" : "#6b7280",
+        color: selected ? "#fff" : "#6b7280",
         border: `1.5px solid ${selected ? tag.color : "rgba(0,0,0,0.08)"}`,
         cursor: "pointer",
         boxShadow: selected ? `0 4px 16px ${tag.color}44` : "none",
@@ -215,17 +218,23 @@ function ThankYouScreen({ rating, onReset }: {
         transition={{ delay: 0.25 }}
         className="text-center"
       >
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "36px",
+        <h2 style={{
+          fontFamily: "'Syne', sans-serif", fontSize: "36px",
           fontWeight: 800, color: rating.text, marginBottom: "10px",
-          letterSpacing: "-0.02em" }}>
+          letterSpacing: "-0.02em"
+        }}>
           Thank You!
         </h2>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px",
-          color: rating.accent, fontWeight: 500, marginBottom: "6px" }}>
+        <p style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: "16px",
+          color: rating.accent, fontWeight: 500, marginBottom: "6px"
+        }}>
           អរគុណ! · {rating.label}
         </p>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px",
-          color: rating.text, opacity: 0.55 }}>
+        <p style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: "14px",
+          color: rating.text, opacity: 0.55
+        }}>
           Your feedback helps us improve our service.
         </p>
       </motion.div>
@@ -252,13 +261,17 @@ function ThankYouScreen({ rating, onReset }: {
             style={{ transformOrigin: "28px 28px", transform: "rotate(-90deg)" }}
           />
           <text x="28" y="33" textAnchor="middle"
-            style={{ fontFamily: "'DM Mono', monospace", fontSize: "16px",
-              fontWeight: 700, fill: rating.accent }}>
+            style={{
+              fontFamily: "'DM Mono', monospace", fontSize: "16px",
+              fontWeight: 700, fill: rating.accent
+            }}>
             {countdown}
           </text>
         </svg>
-        <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
-          color: rating.text, opacity: 0.4 }}>
+        <span style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
+          color: rating.text, opacity: 0.4
+        }}>
           Resetting...
         </span>
       </motion.div>
@@ -272,14 +285,14 @@ export default function CustomerFeedback() {
   // TODO: REPLACE — get servicer from active session via Inertia props
   // Controller: return Inertia::render('Counter/Feedback', ['servicer' => $session->servicer, 'tags' => ...])
   const servicer = MOCK_SERVICER;
-  const tags     = MOCK_TAGS;
+  const tags = MOCK_TAGS;
 
-  const [selectedRating,  setSelectedRating]  = useState<RatingLevel | null>(null);
-  const [selectedTagIds,  setSelectedTagIds]  = useState<number[]>([]);
-  const [comment,         setComment]         = useState("");
-  const [step,            setStep]            = useState<"rate" | "detail" | "done">("rate");
-  const [submitting,      setSubmitting]      = useState(false);
-  const [lang,            setLang]            = useState<"en" | "kh">("en");
+  const [selectedRating, setSelectedRating] = useState<RatingLevel | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [comment, setComment] = useState("");
+  const [step, setStep] = useState<"rate" | "detail" | "done">("rate");
+  const [submitting, setSubmitting] = useState(false);
+  const [lang, setLang] = useState<"en" | "kh">("en");
 
   // Current color theme based on selected rating
   const theme = selectedRating ?? RATINGS[3]; // default to "Good" colors
@@ -328,6 +341,7 @@ export default function CustomerFeedback() {
 
   return (
     <>
+      <Head title="Customer Feedback" />
       <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
       <Toaster position="top-center" />
 
@@ -359,12 +373,16 @@ export default function CustomerFeedback() {
                 {servicer.name.charAt(0)}
               </div>
               <div>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
-                  color: "#9ca3af", marginBottom: "1px" }}>
+                <p style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
+                  color: "#9ca3af", marginBottom: "1px"
+                }}>
                   {lang === "en" ? "Served by" : "បម្រើដោយ"}
                 </p>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: "15px",
-                  fontWeight: 700, color: "#1f2937" }}>
+                <p style={{
+                  fontFamily: "'Syne', sans-serif", fontSize: "15px",
+                  fontWeight: 700, color: "#1f2937"
+                }}>
                   {servicer.name}
                 </p>
               </div>
@@ -374,9 +392,11 @@ export default function CustomerFeedback() {
             <button
               onClick={() => setLang(l => l === "en" ? "kh" : "en")}
               className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-              style={{ fontFamily: "'DM Mono', monospace",
+              style={{
+                fontFamily: "'DM Mono', monospace",
                 background: "rgba(0,0,0,0.05)", color: "#6b7280",
-                border: "1px solid rgba(0,0,0,0.08)", cursor: "pointer" }}
+                border: "1px solid rgba(0,0,0,0.08)", cursor: "pointer"
+              }}
             >
               {lang === "en" ? "ខ្មែរ" : "EN"}
             </button>
@@ -397,14 +417,18 @@ export default function CustomerFeedback() {
               {/* Heading */}
               <div className="text-center">
                 <motion.h1
-                  style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px,5vw,42px)",
+                  style={{
+                    fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px,5vw,42px)",
                     fontWeight: 800, color: "#1f2937", letterSpacing: "-0.02em",
-                    lineHeight: 1.15, marginBottom: "10px" }}
+                    lineHeight: 1.15, marginBottom: "10px"
+                  }}
                 >
                   {lang === "en" ? "How was your experience?" : "សេវាមានភាពដូចម្ដេច?"}
                 </motion.h1>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px",
-                  color: "#9ca3af", fontWeight: 300 }}>
+                <p style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "15px",
+                  color: "#9ca3af", fontWeight: 300
+                }}>
                   {lang === "en"
                     ? "Tap an emoji to rate your service"
                     : "សូមចុចលើរូបភាព ដើម្បីវាយតម្លៃ"}
@@ -427,9 +451,11 @@ export default function CustomerFeedback() {
                   animate={{ opacity: 1, y: 0 }}
                   onClick={() => setStep("detail")}
                   className="px-8 py-3 rounded-2xl font-semibold text-white text-sm"
-                  style={{ background: theme.accent, border: "none", cursor: "pointer",
+                  style={{
+                    background: theme.accent, border: "none", cursor: "pointer",
                     fontFamily: "'DM Sans', sans-serif",
-                    boxShadow: `0 6px 24px ${theme.accent}44` }}
+                    boxShadow: `0 6px 24px ${theme.accent}44`
+                  }}
                 >
                   Continue →
                 </motion.button>
@@ -451,14 +477,18 @@ export default function CustomerFeedback() {
                 style={{ background: `${theme.accent}11`, border: `1.5px solid ${theme.accent}33` }}>
                 <span style={{ fontSize: "32px" }}>{selectedRating.emoji}</span>
                 <div>
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: "16px",
-                    fontWeight: 700, color: theme.text }}>
+                  <p style={{
+                    fontFamily: "'Syne', sans-serif", fontSize: "16px",
+                    fontWeight: 700, color: theme.text
+                  }}>
                     {selectedRating.label}
                   </p>
                   <button onClick={() => setStep("rate")}
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
                       color: theme.accent, background: "none", border: "none",
-                      cursor: "pointer", padding: 0 }}>
+                      cursor: "pointer", padding: 0
+                    }}>
                     Change rating
                   </button>
                 </div>
@@ -466,8 +496,10 @@ export default function CustomerFeedback() {
 
               {/* Tags */}
               <div>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: "14px",
-                  fontWeight: 700, color: "#374151", marginBottom: "12px" }}>
+                <p style={{
+                  fontFamily: "'Syne', sans-serif", fontSize: "14px",
+                  fontWeight: 700, color: "#374151", marginBottom: "12px"
+                }}>
                   {lang === "en" ? "What best describes your experience? (Optional)" : "តើមានអ្វីដែលពណ៌នាបានល្អ? (ស្រេចចិត្ត)"}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -481,8 +513,10 @@ export default function CustomerFeedback() {
 
               {/* Comment */}
               <div>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: "14px",
-                  fontWeight: 700, color: "#374151", marginBottom: "10px" }}>
+                <p style={{
+                  fontFamily: "'Syne', sans-serif", fontSize: "14px",
+                  fontWeight: 700, color: "#374151", marginBottom: "10px"
+                }}>
                   {lang === "en" ? "Leave a comment (Optional)" : "បញ្ចេញមតិ (ស្រេចចិត្ត)"}
                 </p>
                 <textarea
@@ -503,8 +537,10 @@ export default function CustomerFeedback() {
                     outline: "none", transition: "border-color 0.2s",
                   }}
                 />
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "11px",
-                  color: "#d1d5db", textAlign: "right", marginTop: "4px" }}>
+                <p style={{
+                  fontFamily: "'DM Mono', monospace", fontSize: "11px",
+                  color: "#d1d5db", textAlign: "right", marginTop: "4px"
+                }}>
                   {comment.length}/300
                 </p>
               </div>
@@ -529,9 +565,11 @@ export default function CustomerFeedback() {
 
               {/* Skip detail */}
               <button onClick={handleSubmit}
-                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
+                style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "13px",
                   color: "#9ca3af", background: "none", border: "none",
-                  cursor: "pointer", textAlign: "center" }}>
+                  cursor: "pointer", textAlign: "center"
+                }}>
                 {lang === "en" ? "Skip and submit" : "រំលង ហើយបញ្ជូន"}
               </button>
             </motion.div>

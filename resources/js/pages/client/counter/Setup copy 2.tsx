@@ -55,7 +55,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { router } from "@inertiajs/react";
+import { router, Head } from "@inertiajs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -439,6 +439,7 @@ export default function CounterSetup({ branches }: Props) {
 
   return (
     <>
+      <Head title="Counter Setup" />
       <link
         href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
         rel="stylesheet"

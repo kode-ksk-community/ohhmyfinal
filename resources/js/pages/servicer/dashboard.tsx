@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Clock, LogOut, MapPin, Building2 } from 'lucide-react';
+import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -110,82 +111,85 @@ export default function ServicerDashboard() {
     }
 
     return (
-        <div className="min-h-screen p-4 pb-32" style={{ background: '#f8f1e8' }}>
-            {/* Main Session Card */}
-            <div className="max-w-md mx-auto space-y-4">
-                {/* Status Header */}
-                <div className="text-center pt-4">
-                    <Badge className="text-white text-lg px-4 py-2" style={{ background: '#b47d46' }}>
-                        Active Session
-                    </Badge>
-                </div>
-
-                {/* Counter Information */}
-                <Card className="p-6 shadow-lg rounded-xl" style={{ border: '1px solid #e5d4c0', background: 'rgba(255,255,255,0.94)' }}>
-                    <div className="space-y-4">
-                        {/* Counter Label */}
-                        <div className="text-center">
-                            <h2 className="text-4xl font-bold" style={{ color: '#8f5f35' }}>
-                                {session.counter.label}
-                            </h2>
-                            <p className="text-sm" style={{ color: '#80664a' }}>Counter Number</p>
-                        </div>
-
-                        {/* Branch Information */}
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                            <div className="flex items-center gap-2 text-gray-700">
-                                <Building2 size={18} className="text-indigo-600 flex-shrink-0" />
-                                <div>
-                                    <p className="text-sm font-medium">{session.counter.branch.name}</p>
-                                    <p className="text-xs text-gray-500">Branch</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-gray-700">
-                                <MapPin size={18} className="text-indigo-600 flex-shrink-0" />
-                                <div>
-                                    <p className="text-sm font-medium">{session.counter.branch.location}</p>
-                                    <p className="text-xs text-gray-500">Location</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Elapsed Time */}
-                        <div className="bg-indigo-50 rounded-lg p-4 border-2 border-indigo-200">
-                            <div className="flex items-center justify-center gap-2 mb-2">
-                                <Clock size={20} className="text-indigo-600" />
-                                <p className="text-sm font-medium text-gray-600">Time Elapsed</p>
-                            </div>
-                            <p className="text-3xl font-bold text-indigo-600 text-center">
-                                {elapsedTime}
-                            </p>
-                            <p className="text-xs text-gray-500 text-center mt-2">
-                                Since {new Date(session.started_at).toLocaleTimeString()}
-                            </p>
-                        </div>
-
-                        {/* Session Start Time */}
-                        <div className="text-center text-sm">
-                            <p className="text-gray-600">
-                                Started at <span className="font-semibold">{new Date(session.started_at).toLocaleString()}</span>
-                            </p>
-                        </div>
+        <>
+            <Head title="Servicer Dashboard" />
+            <div className="min-h-screen p-4 pb-32" style={{ background: '#f8f1e8' }}>
+                {/* Main Session Card */}
+                <div className="max-w-md mx-auto space-y-4">
+                    {/* Status Header */}
+                    <div className="text-center pt-4">
+                        <Badge className="text-white text-lg px-4 py-2" style={{ background: '#b47d46' }}>
+                            Active Session
+                        </Badge>
                     </div>
-                </Card>
 
-                {/* Terminate Button */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 max-w-md mx-auto">
-                    <Button
-                        onClick={handleTerminateSession}
-                        disabled={terminating}
-                        className="w-full text-white font-semibold py-6 rounded-lg flex items-center justify-center gap-2"
-                        style={{ background: '#b23f26' }}
-                        size="lg"
-                    >
-                        <LogOut size={20} />
-                        {terminating ? 'Terminating...' : 'Terminate Session'}
-                    </Button>
+                    {/* Counter Information */}
+                    <Card className="p-6 shadow-lg rounded-xl" style={{ border: '1px solid #e5d4c0', background: 'rgba(255,255,255,0.94)' }}>
+                        <div className="space-y-4">
+                            {/* Counter Label */}
+                            <div className="text-center">
+                                <h2 className="text-4xl font-bold" style={{ color: '#8f5f35' }}>
+                                    {session.counter.label}
+                                </h2>
+                                <p className="text-sm" style={{ color: '#80664a' }}>Counter Number</p>
+                            </div>
+
+                            {/* Branch Information */}
+                            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                                <div className="flex items-center gap-2 text-gray-700">
+                                    <Building2 size={18} className="text-indigo-600 flex-shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-medium">{session.counter.branch.name}</p>
+                                        <p className="text-xs text-gray-500">Branch</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-700">
+                                    <MapPin size={18} className="text-indigo-600 flex-shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-medium">{session.counter.branch.location}</p>
+                                        <p className="text-xs text-gray-500">Location</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Elapsed Time */}
+                            <div className="bg-indigo-50 rounded-lg p-4 border-2 border-indigo-200">
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                    <Clock size={20} className="text-indigo-600" />
+                                    <p className="text-sm font-medium text-gray-600">Time Elapsed</p>
+                                </div>
+                                <p className="text-3xl font-bold text-indigo-600 text-center">
+                                    {elapsedTime}
+                                </p>
+                                <p className="text-xs text-gray-500 text-center mt-2">
+                                    Since {new Date(session.started_at).toLocaleTimeString()}
+                                </p>
+                            </div>
+
+                            {/* Session Start Time */}
+                            <div className="text-center text-sm">
+                                <p className="text-gray-600">
+                                    Started at <span className="font-semibold">{new Date(session.started_at).toLocaleString()}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Terminate Button */}
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 max-w-md mx-auto">
+                        <Button
+                            onClick={handleTerminateSession}
+                            disabled={terminating}
+                            className="w-full text-white font-semibold py-6 rounded-lg flex items-center justify-center gap-2"
+                            style={{ background: '#b23f26' }}
+                            size="lg"
+                        >
+                            <LogOut size={20} />
+                            {terminating ? 'Terminating...' : 'Terminate Session'}
+                        </Button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

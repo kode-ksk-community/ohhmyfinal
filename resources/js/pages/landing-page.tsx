@@ -1,6 +1,11 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function LandingPage() {
+
+    const prop = usePage().props;
+
+    console.log('Flash message:', prop.auth);
+    
     return (
         <>
             <Head title="FeedbackPro" />
@@ -202,18 +207,21 @@ export default function LandingPage() {
 
                     {/* Buttons */}
                     <div className="btn-group">
-                        <a href="/counter/setup" className="btn btn-primary">
-                            Set Up a Counter
-                            <svg className="btn-arrow" viewBox="0 0 14 14" fill="none">
-                                <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                        </a>
-                        <a href="/admin/dashboard" className="btn btn-secondary">
+                        {prop?.auth?.user?.role !== "servicer" ? (
+                            <Link href="/counter/setup" className="btn btn-primary">
+                                Set Up a Counter
+                                <svg className="btn-arrow" viewBox="0 0 14 14" fill="none">
+                                    <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </Link>
+                        ) : null}
+                        {}
+                        <Link href={route('dashboard')} className="btn btn-secondary">
                             Open Admin Panel
                             <svg className="btn-arrow" viewBox="0 0 14 14" fill="none">
                                 <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                        </a>
+                        </Link>
                     </div>
 
                 </div>

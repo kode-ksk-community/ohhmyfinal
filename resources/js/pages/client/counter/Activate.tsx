@@ -59,6 +59,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { Head } from "@inertiajs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
@@ -375,6 +376,7 @@ export default function ServicerActivation() {
 
   return (
     <>
+      <Head title="Servicer Activation" />
       <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
       {/* Mobile-first warm cream screen */}

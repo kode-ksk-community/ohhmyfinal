@@ -85,7 +85,7 @@ class CounterController extends Controller
     /**
      * Update the specified counter.
      */
-    public function update(Request $request, Counter $counter): JsonResponse
+    public function update(Request $request, Counter $counter)
     {
         $validated = $request->validate([
             'branch_id' => 'required|exists:branches,id',
@@ -107,18 +107,19 @@ class CounterController extends Controller
         $counter->load(['branch', 'activeSession.servicer']);
         $counter->loadCount('feedbacks');
 
-        return response()->json([
-            'id' => $counter->id,
-            'branch_id' => $counter->branch_id,
-            'branch_name' => $counter->branch->name,
-            'name' => $counter->name,
-            'description' => $counter->description,
-            'is_active' => $counter->is_active,
-            'is_occupied' => $counter->isOccupied(),
-            'current_servicer' => $counter->currentServicer()?->name,
-            'feedback_count' => $counter->feedbacks_count,
-            'created_at' => $counter->created_at->format('Y-m-d'),
-        ]);
+        return back()->with('success', 'Counter updated successfully');
+        // return response()->json([
+        //     'id' => $counter->id,
+        //     'branch_id' => $counter->branch_id,
+        //     'branch_name' => $counter->branch->name,
+        //     'name' => $counter->name,
+        //     'description' => $counter->description,
+        //     'is_active' => $counter->is_active,
+        //     'is_occupied' => $counter->isOccupied(),
+        //     'current_servicer' => $counter->currentServicer()?->name,
+        //     'feedback_count' => $counter->feedbacks_count,
+        //     'created_at' => $counter->created_at->format('Y-m-d'),
+        // ]);
     }
 
     /**
@@ -136,13 +137,14 @@ class CounterController extends Controller
     /**
      * Force end the active session on the counter.
      */
-    public function forceEndSession(Counter $counter): JsonResponse
+    public function forceEndSession(Counter $counter)
     {
         if ($counter->activeSession) {
             $counter->activeSession->update(['ended_at' => now()]);
         }
 
-        return response()->json(['message' => 'Session ended successfully']);
+        return back()->with('success', 'Session ended successfully');
+        // return response()->json(['message' => 'Session ended successfully']);
     }
 
     /**

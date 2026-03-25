@@ -57,28 +57,28 @@ class CounterSessionController extends Controller
             ->first();
 
         if (! $session) {
-            Log::debug('Session Polling: No active session', [
-                'counter_id' => $counter->id,
-                'counter_name' => $counter->name,
-                'branch_id' => $counter->branch_id,
-                'ip' => $request->ip(),
-                'timestamp' => now(),
-            ]);
+            // Log::debug('Session Polling: No active session', [
+            //     'counter_id' => $counter->id,
+            //     'counter_name' => $counter->name,
+            //     'branch_id' => $counter->branch_id,
+            //     'ip' => $request->ip(),
+            //     'timestamp' => now(),
+            // ]);
 
             return response()->json(['active' => false]);
         }
 
-        Log::debug('Session Polling: Active session found', [
-            'counter_id' => $counter->id,
-            'counter_name' => $counter->name,
-            'branch_id' => $counter->branch_id,
-            'session_id' => $session->id,
-            'servicer_id' => $session->servicer->id,
-            'servicer_name' => $session->servicer->name,
-            'session_started_at' => $session->started_at->toISOString(),
-            'ip' => $request->ip(),
-            'timestamp' => now(),
-        ]);
+        // Log::debug('Session Polling: Active session found', [
+        //     'counter_id' => $counter->id,
+        //     'counter_name' => $counter->name,
+        //     'branch_id' => $counter->branch_id,
+        //     'session_id' => $session->id,
+        //     'servicer_id' => $session->servicer->id,
+        //     'servicer_name' => $session->servicer->name,
+        //     'session_started_at' => $session->started_at->toISOString(),
+        //     'ip' => $request->ip(),
+        //     'timestamp' => now(),
+        // ]);
 
         return response()->json([
             'active'  => true,
@@ -115,12 +115,12 @@ class CounterSessionController extends Controller
             ->first();
 
         if (! $session) {
-            Log::debug('Session end called but no active session', [
-                'counter_id' => $counter->id,
-                'counter_name' => $counter->name,
-                'ip' => $request->ip(),
-                'timestamp' => now(),
-            ]);
+            // Log::debug('Session end called but no active session', [
+            //     'counter_id' => $counter->id,
+            //     'counter_name' => $counter->name,
+            //     'ip' => $request->ip(),
+            //     'timestamp' => now(),
+            // ]);
 
             return response()->json(['success' => true, 'active' => false, 'message' => 'No active session to end'], 200);
         }

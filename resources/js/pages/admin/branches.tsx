@@ -19,7 +19,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { router } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../Layouts/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -304,6 +304,7 @@ export default function AdminBranches({ branches: initialBranches }: Props) {
 
   return (
     <AdminLayout title="Branches" active="branches">
+      <Head title="Branches" />
       <Toaster position="top-right" toastOptions={{
         style: { fontFamily: "'DM Sans', sans-serif", borderRadius: "12px", fontSize: "13px" },
       }} />

@@ -19,7 +19,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { router } from "@inertiajs/react";
+import { router, Head } from "@inertiajs/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import QRCode from "qrcode";
@@ -753,7 +753,9 @@ export default function CounterActive() {
     if (!deviceInfo) return null;
 
     return (
-        <AnimatePresence mode="wait">
+        <>
+            <Head title="Counter Active" />
+            <AnimatePresence mode="wait">
             {activeSession ? (
                 <FeedbackScreen key="feedback" session={activeSession} onComplete={handleFeedbackComplete} />
             ) : (
@@ -764,5 +766,6 @@ export default function CounterActive() {
                 />
             )}
         </AnimatePresence>
+        </>
     );
 }

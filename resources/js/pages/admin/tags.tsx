@@ -22,7 +22,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { router } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../Layouts/AdminLayout";
 
@@ -497,6 +497,7 @@ export default function AdminTags({ tags: initialTags, branches }: Props) {
 
   return (
     <AdminLayout title="Tags" active="tags">
+      <Head title="Tags" />
       <Toaster position="top-right" toastOptions={{
         style: { fontFamily:"'DM Sans',sans-serif", borderRadius:"12px", fontSize:"13px" },
       }}/>

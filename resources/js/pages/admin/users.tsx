@@ -20,7 +20,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, router } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from "../Layouts/AdminLayout";
 
@@ -473,6 +473,7 @@ export default function AdminUsers({ users: initialUsers, branches }: Props) {
 
   return (
     <AdminLayout title="Users" active="users">
+      <Head title="Users" />
       <Toaster position="top-right" toastOptions={{
         style: { fontFamily: "'DM Sans',sans-serif", borderRadius: "12px", fontSize: "13px" },
       }} />

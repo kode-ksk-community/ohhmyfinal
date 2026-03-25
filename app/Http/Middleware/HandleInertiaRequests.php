@@ -46,7 +46,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'can' => [
                     'access-admin-page' => $request->user()?->can('access-admin-page'),
-                    'access-instructor-page' => $request->user()?->can('access-instructor-page'),
+                    'access-superadmin-page' => $request->user()?->can('access-superadmin-page'),
+                    'access-servicer-page' => $request->user()?->can('access-servicer-page'),
+                    'access_branch_manager_page' => $request->user()?->can('access_branch_manager_page'),
+
                 ],
             ],
             'flash' => [

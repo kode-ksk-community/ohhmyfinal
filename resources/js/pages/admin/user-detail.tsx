@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "@inertiajs/react";
+import { Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import AdminLayout from "../Layouts/AdminLayout";
 import toast, { Toaster } from "react-hot-toast";
@@ -158,6 +158,7 @@ export default function UserDetail({ user }: Props) {
 
     return (
         <AdminLayout title="User Detail" active="users">
+            <Head title="User Detail" />
             <Toaster position="top-right" />
 
             <div className="flex justify-between items-center mb-5">

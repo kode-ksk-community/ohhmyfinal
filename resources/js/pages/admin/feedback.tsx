@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Head, router } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
-import { router } from "@inertiajs/react";
 import AdminLayout from "../Layouts/Adminlayout";
 
 interface Feedback {
@@ -163,10 +163,12 @@ export default function AdminFeedback({ feedbacks }: Props) {
   };
 
   return (
-    <AdminLayout
-      title="Customer Feedback"
-      active="feedback"
-      actions={
+    <>
+      <Head title="Customer Feedback" />
+      <AdminLayout
+        title="Customer Feedback"
+        active="feedback"
+        actions={
         <div className="flex gap-2">
           <button
             onClick={() => handleExport("csv")}
@@ -494,5 +496,6 @@ export default function AdminFeedback({ feedbacks }: Props) {
         )}
       </AnimatePresence>
     </AdminLayout>
+    </>
   );
 }
