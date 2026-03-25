@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Counter;
 use App\Models\Branch;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Hash;
@@ -14,29 +13,43 @@ use Illuminate\Support\Facades\Hash;
 class CounterController extends Controller
 {
     /**
-     * Display the admin counters page with data.
+     * Shared eager-load query for counters.
+     */
+    private function counterQuery()
+    {
+        return Counter::with(['branch', 'activeSession.servicer'])
+            ->withCount('feedbacks')
+            ->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Map a Counter model to the shape the frontend expects.
+     */
+    private function formatCounter(Counter $counter): array
+    {
+        return [
+            'id'               => $counter->id,
+            'branch_id'        => $counter->branch_id,
+            'branch_name'      => $counter->branch->name,
+            'name'             => $counter->name,
+            'description'      => $counter->description,
+            'is_active'        => (bool) $counter->is_active,
+            'is_occupied'      => $counter->isOccupied(),
+            'current_servicer' => $counter->currentServicer()?->name,
+            'feedback_count'   => $counter->feedbacks_count ?? 0,
+            'device_token'     => $counter->device_token,
+            'created_at'       => $counter->created_at->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * Display the admin counters page.
      */
     public function index(): Response
     {
-        $counters = Counter::with(['branch', 'activeSession.servicer'])
-            ->withCount('feedbacks')
-            ->orderBy('created_at', 'desc')
+        $counters = $this->counterQuery()
             ->get()
-            ->map(function ($counter) {
-                return [
-                    'id' => $counter->id,
-                    'branch_id' => $counter->branch_id,
-                    'branch_name' => $counter->branch->name,
-                    'name' => $counter->name,
-                    'description' => $counter->description,
-                    'is_active' => $counter->is_active,
-                    'device_token' => $counter->device_token,
-                    'is_occupied' => $counter->isOccupied(),
-                    'current_servicer' => $counter->currentServicer()?->name,
-                    'feedback_count' => $counter->feedbacks_count,
-                    'created_at' => $counter->created_at->format('Y-m-d'),
-                ];
-            });
+            ->map(fn($c) => $this->formatCounter($c));
 
         $branches = Branch::active()->select('id', 'name')->get();
 
@@ -49,116 +62,90 @@ class CounterController extends Controller
     /**
      * Store a newly created counter.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'branch_id' => 'required|exists:branches,id',
-            'name' => 'required|string|max:255',
+            'branch_id'   => 'required|exists:branches,id',
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'pin' => 'required|string|min:4|max:10',
-            'is_active' => 'boolean',
+            'pin'         => 'required|string|min:4|max:10',
+            'is_active'   => 'boolean',
         ]);
 
         $validated['pin'] = Hash::make($validated['pin']);
 
-        $counter = Counter::create($validated);
+        Counter::create($validated);
 
-        // Load relationships for response
-        $counter->load(['branch', 'activeSession.servicer']);
-        $counter->loadCount('feedbacks');
-
-        return back()->with('success', 'Counter created successfully');
-        // return response()->json([
-        //     'id' => $counter->id,
-        //     'branch_id' => $counter->branch_id,
-        //     'branch_name' => $counter->branch->name,
-        //     'name' => $counter->name,
-        //     'description' => $counter->description,
-        //     'is_active' => $counter->is_active,
-        //     'is_occupied' => $counter->isOccupied(),
-        //     'current_servicer' => $counter->currentServicer()?->name,
-        //     'feedback_count' => $counter->feedbacks_count,
-        //     'created_at' => $counter->created_at->format('Y-m-d'),
-        // ]);
+        return redirect()->route('admin.counters.index')
+            ->with('success', 'Counter created successfully.');
     }
 
     /**
      * Update the specified counter.
      */
-    public function update(Request $request, Counter $counter)
+    public function update(Request $request, Counter $counter): RedirectResponse
     {
         $validated = $request->validate([
-            'branch_id' => 'required|exists:branches,id',
-            'name' => 'required|string|max:255',
+            'branch_id'   => 'required|exists:branches,id',
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'pin' => 'nullable|string|min:4|max:10', // PIN optional on update
-            'is_active' => 'boolean',
+            'pin'         => 'nullable|string|min:4|max:10',
+            'is_active'   => 'boolean',
         ]);
 
+        // Only re-hash if a new PIN was provided
         if (!empty($validated['pin'])) {
             $validated['pin'] = Hash::make($validated['pin']);
         } else {
-            unset($validated['pin']); // Don't update PIN if not provided
+            unset($validated['pin']);
         }
 
         $counter->update($validated);
 
-        // Load relationships for response
-        $counter->load(['branch', 'activeSession.servicer']);
-        $counter->loadCount('feedbacks');
-
-        return back()->with('success', 'Counter updated successfully');
-        // return response()->json([
-        //     'id' => $counter->id,
-        //     'branch_id' => $counter->branch_id,
-        //     'branch_name' => $counter->branch->name,
-        //     'name' => $counter->name,
-        //     'description' => $counter->description,
-        //     'is_active' => $counter->is_active,
-        //     'is_occupied' => $counter->isOccupied(),
-        //     'current_servicer' => $counter->currentServicer()?->name,
-        //     'feedback_count' => $counter->feedbacks_count,
-        //     'created_at' => $counter->created_at->format('Y-m-d'),
-        // ]);
+        return redirect()->route('admin.counters.index')
+            ->with('success', 'Counter updated successfully.');
     }
 
     /**
      * Toggle the active status of the counter.
      */
-    public function toggle(Counter $counter): JsonResponse
+    public function toggle(Counter $counter): RedirectResponse
     {
-        $counter->update(['is_active' => !$counter->is_active]);
+        $counter->update(['is_active' => ! $counter->is_active]);
 
-        return response()->json([
-            'is_active' => $counter->is_active,
-        ]);
+        $status = $counter->is_active ? 'activated' : 'deactivated';
+
+        return redirect()->route('admin.counters.index')
+            ->with('success', "Counter {$status} successfully.");
     }
 
     /**
-     * Force end the active session on the counter.
+     * Force-end the active session on a counter.
      */
-    public function forceEndSession(Counter $counter)
+    public function forceEndSession(Counter $counter): RedirectResponse
     {
         if ($counter->activeSession) {
             $counter->activeSession->update(['ended_at' => now()]);
         }
 
-        return back()->with('success', 'Session ended successfully');
-        // return response()->json(['message' => 'Session ended successfully']);
+        return redirect()->route('admin.counters.index')
+            ->with('success', 'Session ended successfully.');
     }
 
     /**
-     * Remove the specified counter (soft delete).
+     * Soft-delete the specified counter.
+     * Guards against deletion while a session is active.
      */
-    public function destroy(Counter $counter): JsonResponse
+    public function destroy(Counter $counter): RedirectResponse
     {
-        // Check if counter has active session
         if ($counter->isOccupied()) {
-            return response()->json(['error' => 'Cannot delete counter with active session'], 422);
+            return redirect()->route('admin.counters.index')
+                ->with('error', 'Cannot delete a counter with an active session. Please end the session first.');
         }
 
         $counter->delete();
 
-        return response()->json(['message' => 'Counter deleted successfully']);
+        return redirect()->route('admin.counters.index')
+            ->with('success', 'Counter deleted successfully.');
     }
 }
