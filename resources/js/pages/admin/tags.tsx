@@ -23,6 +23,7 @@ import { Head, router, usePage } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
 import AdminLayout from '@/layouts/app-layout';
 
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Tag {
@@ -50,6 +51,7 @@ interface PageProps {
   branches: Branch[];
   flash?: { success?: string; error?: string };
   [key: string]: unknown;
+  user: any;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -62,9 +64,9 @@ const PRESET_COLORS = [
 
 const SENTIMENT_CONFIG = {
   very_positive: { label: "Very Positive", color: "#22c55e", bg: "#f0fdf4", icon: "😊", level: 5 },
-  positive:      { label: "Positive",      color: "#84cc16", bg: "#fafce8", icon: "👍", level: 4 },
-  neutral:       { label: "Neutral",       color: "#94a3b8", bg: "#f8fafc", icon: "😐", level: 3 },
-  negative:      { label: "Negative",      color: "#f97316", bg: "#fff7ed", icon: "👎", level: 2 },
+  positive: { label: "Positive", color: "#84cc16", bg: "#fafce8", icon: "👍", level: 4 },
+  neutral: { label: "Neutral", color: "#94a3b8", bg: "#f8fafc", icon: "😐", level: 3 },
+  negative: { label: "Negative", color: "#f97316", bg: "#fff7ed", icon: "👎", level: 2 },
   very_negative: { label: "Very Negative", color: "#ef4444", bg: "#fef2f2", icon: "😭", level: 1 },
 };
 
@@ -114,20 +116,28 @@ function TagDrawer({
   branches: Branch[];
   onClose: () => void;
 }) {
+  const prop = usePage().props;
+  const user = prop?.auth?.user;
   const isEdit = !!tag?.id;
+
+  // For branch_managers creating new tags, auto-set their branch
+  const initialBranchId = tag?.branch_id
+    ? tag.branch_id
+    : (user?.role === "branch_manager" && user?.branch_id ? user.branch_id : null);
+
   const [form, setForm] = useState({
-    name:       tag?.name       ?? "",
-    name_kh:    tag?.name_kh    ?? "",
-    color:      tag?.color      ?? "#22c55e",
-    icon:       tag?.icon       ?? "",
-    sentiment:  (tag?.sentiment ?? "positive") as Sentiment,
-    branch_id:  tag?.branch_id  ?? (null as number | null),
+    name: tag?.name ?? "",
+    name_kh: tag?.name_kh ?? "",
+    color: tag?.color ?? "#22c55e",
+    icon: tag?.icon ?? "",
+    sentiment: (tag?.sentiment ?? "positive") as Sentiment,
+    branch_id: initialBranchId,
     sort_order: tag?.sort_order ?? 0,
-    is_active:  tag?.is_active  ?? true,
+    is_active: tag?.is_active ?? true,
   });
   const [customColor, setCustomColor] = useState(false);
-  const [saving,      setSaving]      = useState(false);
-  const [errors,      setErrors]      = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSave = () => {
     if (!form.name.trim()) {
@@ -331,31 +341,54 @@ function TagDrawer({
             <label style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "12px", fontWeight: 600, color: "#374151", display: "block", marginBottom: "7px" }}>
               Scope
             </label>
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => setForm((p) => ({ ...p, branch_id: null }))}
-                style={{ flex: 1, padding: "10px", borderRadius: 12, border: `1.5px solid ${!form.branch_id ? "#0f172a" : "#e2e8f0"}`, background: !form.branch_id ? "#0f172a" : "transparent", color: !form.branch_id ? "#ffffff" : "#64748b", fontFamily: "'DM Sans',sans-serif", fontSize: "12px", fontWeight: !form.branch_id ? 600 : 400, cursor: "pointer" }}>
-                🌐 Global (all branches)
-              </button>
-              <button
-                onClick={() => setForm((p) => ({ ...p, branch_id: p.branch_id ?? branches[0]?.id ?? null }))}
-                style={{ flex: 1, padding: "10px", borderRadius: 12, border: `1.5px solid ${form.branch_id ? "#0f172a" : "#e2e8f0"}`, background: form.branch_id ? "#0f172a" : "transparent", color: form.branch_id ? "#ffffff" : "#64748b", fontFamily: "'DM Sans',sans-serif", fontSize: "12px", fontWeight: form.branch_id ? 600 : 400, cursor: "pointer" }}>
-                🏢 Branch-specific
-              </button>
-            </div>
-            <AnimatePresence>
-              {form.branch_id && (
-                <motion.select
-                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                  value={form.branch_id}
-                  onChange={(e) => setForm((p) => ({ ...p, branch_id: Number(e.target.value) }))}
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafbfc", fontFamily: "'DM Sans',sans-serif", fontSize: "13px", color: "#0f172a", outline: "none", cursor: "pointer" }}>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </motion.select>
-              )}
-            </AnimatePresence>
+            {user?.role === "branch_manager" ? (
+              <div style={{ padding: "12px", borderRadius: 12, background: "#f0fdf4", border: "1.5px solid #bbf7d0" }}>
+                <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "13px", fontWeight: 600, color: "#16a34a", marginBottom: "6px" }}>
+                  🏢 Branch-specific
+                </p>
+                <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "12px", color: "#65a30d", marginBottom: "8px" }}>
+                  Creating tag for: <strong>{branches.find(b => b.id === form.branch_id)?.name || 'Your branch'}</strong>
+                </p>
+                {branches.length > 1 && (
+                  <select
+                    value={form.branch_id || ""}
+                    onChange={(e) => setForm((p) => ({ ...p, branch_id: Number(e.target.value) || user?.branch_id }))}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: 10, border: "1.5px solid #bbf7d0", background: "#ffffff", fontFamily: "'DM Sans',sans-serif", fontSize: "12px", color: "#0f172a", outline: "none", cursor: "pointer" }}>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setForm((p) => ({ ...p, branch_id: null }))}
+                    style={{ flex: 1, padding: "10px", borderRadius: 12, border: `1.5px solid ${!form.branch_id ? "#0f172a" : "#e2e8f0"}`, background: !form.branch_id ? "#0f172a" : "transparent", color: !form.branch_id ? "#ffffff" : "#64748b", fontFamily: "'DM Sans',sans-serif", fontSize: "12px", fontWeight: !form.branch_id ? 600 : 400, cursor: "pointer" }}>
+                    🌐 Global (all branches)
+                  </button>
+                  <button
+                    onClick={() => setForm((p) => ({ ...p, branch_id: p.branch_id ?? branches[0]?.id ?? null }))}
+                    style={{ flex: 1, padding: "10px", borderRadius: 12, border: `1.5px solid ${form.branch_id ? "#0f172a" : "#e2e8f0"}`, background: form.branch_id ? "#0f172a" : "transparent", color: form.branch_id ? "#ffffff" : "#64748b", fontFamily: "'DM Sans',sans-serif", fontSize: "12px", fontWeight: form.branch_id ? 600 : 400, cursor: "pointer" }}>
+                    🏢 Branch-specific
+                  </button>
+                </div>
+                <AnimatePresence>
+                  {form.branch_id && (
+                    <motion.select
+                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                      value={form.branch_id}
+                      onChange={(e) => setForm((p) => ({ ...p, branch_id: Number(e.target.value) }))}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fafbfc", fontFamily: "'DM Sans',sans-serif", fontSize: "13px", color: "#0f172a", outline: "none", cursor: "pointer" }}>
+                      {branches.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </motion.select>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
           </div>
 
           {/* Sort order + Active */}
@@ -478,30 +511,36 @@ function DeleteModal({
 
 export default function AdminTags({ tags, branches }: { tags: Tag[]; branches: Branch[] }) {
   const { props } = usePage<PageProps>();
+  const user = props.auth?.user;
 
-  const [search,       setSearch]       = useState("");
-  const [filterSent,   setFilterSent]   = useState<string>("all");
-  const [filterScope,  setFilterScope]  = useState<"all" | "global" | "branch">("all");
-  const [viewMode,     setViewMode]     = useState<"grid" | "table">("grid");
-  const [drawer,       setDrawer]       = useState<Partial<Tag> | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterSent, setFilterSent] = useState<string>("all");
+  const [filterScope, setFilterScope] = useState<"all" | "global" | "branch">("all");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [drawer, setDrawer] = useState<Partial<Tag> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Tag | null>(null);
-  const [deleting,     setDeleting]     = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // ── Flash messages ────────────────────────────────────────────────────────
   useEffect(() => {
     if (props.flash?.success) toast.success(props.flash.success);
-    if (props.flash?.error)   toast.error(props.flash.error);
+    if (props.flash?.error) toast.error(props.flash.error);
   }, [props.flash]);
 
   // ── Filtered list ─────────────────────────────────────────────────────────
-  const filtered = useMemo(() =>
-    tags
+  const filtered = useMemo(() => {
+    let result = tags
       .filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
-      .filter((t) => filterSent  === "all" ? true : t.sentiment === filterSent)
-      .filter((t) => filterScope === "all" ? true : filterScope === "global" ? !t.branch_id : !!t.branch_id)
-      .sort((a, b) => a.sort_order - b.sort_order),
-    [tags, search, filterSent, filterScope]
-  );
+      .filter((t) => filterSent === "all" ? true : t.sentiment === filterSent)
+      .filter((t) => filterScope === "all" ? true : filterScope === "global" ? !t.branch_id : !!t.branch_id);
+
+    // Branch managers only see their branch's tags
+    if (user?.role === "branch_manager") {
+      result = result.filter((t) => t.branch_id === user?.branch_id);
+    }
+
+    return result.sort((a, b) => a.sort_order - b.sort_order);
+  }, [tags, search, filterSent, filterScope, user]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -514,6 +553,13 @@ export default function AdminTags({ tags, branches }: { tags: Tag[]; branches: B
 
   const handleDelete = () => {
     if (!deleteTarget) return;
+
+    // Branch managers can only delete their branch's tags
+    if (user?.role === "branch_manager" && deleteTarget.branch_id !== user?.branch_id) {
+      toast.error("You can only delete tags in your branch");
+      return;
+    }
+
     setDeleting(true);
     router.delete(route("admin.tags.destroy", deleteTarget.id), {
       preserveScroll: true,
@@ -525,24 +571,30 @@ export default function AdminTags({ tags, branches }: { tags: Tag[]; branches: B
 
   // ── Shared action buttons (used in both grid and table) ───────────────────
 
-  const ActionButtons = ({ tag }: { tag: Tag }) => (
-    <div className="flex gap-2">
-      <button onClick={() => setDrawer(tag)} title="Edit tag"
-        style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "transparent", fontFamily: "'DM Sans',sans-serif", fontSize: "11px", color: "#374151", cursor: "pointer" }}>
-        Edit
-      </button>
-      <button
-        onClick={() => handleToggle(tag)}
-        title={tag.is_active ? "Deactivate" : "Activate"}
-        style={{ padding: "5px 8px", borderRadius: 8, fontSize: "11px", border: `1px solid ${tag.is_active ? "#bbf7d0" : "#fecaca"}`, background: tag.is_active ? "#f0fdf4" : "#fff1f0", color: tag.is_active ? "#16a34a" : "#dc2626", cursor: "pointer" }}>
-        {tag.is_active ? "On" : "Off"}
-      </button>
-      <button onClick={() => setDeleteTarget(tag)} title="Delete tag"
-        style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid #fecaca", background: "#fff1f0", fontSize: "11px", color: "#ef4444", cursor: "pointer" }}>
-        🗑
-      </button>
-    </div>
-  );
+  const ActionButtons = ({ tag }: { tag: Tag }) => {
+    // Branch managers can only edit/delete their branch's tags
+    const canManage = user?.role !== "branch_manager" || tag.branch_id === user?.branch_id;
+
+    return (
+      <div className="flex gap-2">
+        <button onClick={() => setDrawer(tag)} title="Edit tag" disabled={!canManage}
+          style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "transparent", fontFamily: "'DM Sans',sans-serif", fontSize: "11px", color: canManage ? "#374151" : "#cbd5e1", cursor: canManage ? "pointer" : "not-allowed", opacity: canManage ? 1 : 0.5 }}>
+          Edit
+        </button>
+        <button
+          onClick={() => handleToggle(tag)}
+          title={tag.is_active ? "Deactivate" : "Activate"}
+          disabled={!canManage}
+          style={{ padding: "5px 8px", borderRadius: 8, fontSize: "11px", border: `1px solid ${tag.is_active ? "#bbf7d0" : "#fecaca"}`, background: tag.is_active ? "#f0fdf4" : "#fff1f0", color: canManage ? (tag.is_active ? "#16a34a" : "#dc2626") : "#cbd5e1", cursor: canManage ? "pointer" : "not-allowed", opacity: canManage ? 1 : 0.5 }}>
+          {tag.is_active ? "On" : "Off"}
+        </button>
+        <button onClick={() => setDeleteTarget(tag)} title="Delete tag" disabled={!canManage}
+          style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid #fecaca", background: "#fff1f0", fontSize: "11px", color: canManage ? "#ef4444" : "#cbd5e1", cursor: canManage ? "pointer" : "not-allowed", opacity: canManage ? 1 : 0.5 }}>
+          🗑
+        </button>
+      </div>
+    );
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -603,19 +655,19 @@ export default function AdminTags({ tags, branches }: { tags: Tag[]; branches: B
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
           onClick={() => setDrawer({})}
           style={{ padding: "9px 20px", borderRadius: 12, border: "none", background: "#0f172a", color: "#ffffff", fontFamily: "'Syne',sans-serif", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
-          + New Tag
+          + New Tag{user?.role === "branch_manager" && user?.branch_id ? ` for ${branches.find(b => b.id === user.branch_id)?.name || ""}` : ""}
         </motion.button>
       </div>
 
       {/* ── Stats bar ── */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-6 gap-3 mb-6">
         {[
-          { label: "Total Tags",   value: tags.length,                                                            color: "#0f172a" },
-          { label: "Active",       value: tags.filter((t) => t.is_active).length,                                 color: "#22c55e" },
-          { label: "Very Positive",value: tags.filter((t) => t.sentiment === "very_positive").length,             color: "#22c55e" },
-          { label: "Positive",     value: tags.filter((t) => t.sentiment === "positive").length,                  color: "#84cc16" },
-          { label: "Neutral",      value: tags.filter((t) => t.sentiment === "neutral").length,                   color: "#94a3b8" },
-          { label: "Negative+",    value: tags.filter((t) => ["negative", "very_negative"].includes(t.sentiment)).length, color: "#ef4444" },
+          { label: "Total Tags", value: tags.length, color: "#0f172a" },
+          { label: "Active", value: tags.filter((t) => t.is_active).length, color: "#22c55e" },
+          { label: "Very Positive", value: tags.filter((t) => t.sentiment === "very_positive").length, color: "#22c55e" },
+          { label: "Positive", value: tags.filter((t) => t.sentiment === "positive").length, color: "#84cc16" },
+          { label: "Neutral", value: tags.filter((t) => t.sentiment === "neutral").length, color: "#94a3b8" },
+          { label: "Negative+", value: tags.filter((t) => ["negative", "very_negative"].includes(t.sentiment)).length, color: "#ef4444" },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl px-5 py-4"
             style={{ background: "#ffffff", border: "1px solid #f1f5f9", boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
@@ -641,7 +693,7 @@ export default function AdminTags({ tags, branches }: { tags: Tag[]; branches: B
                   initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: i * 0.04 }}
                   className="rounded-2xl p-4 flex flex-col gap-3 border"
-                  style={{ background: "#ffffff",  boxShadow: "0 1px 4px rgba(0,0,0,.04)", opacity: tag.is_active ? 1 : 0.5 }}
+                  style={{ background: "#ffffff", boxShadow: "0 1px 4px rgba(0,0,0,.04)", opacity: tag.is_active ? 1 : 0.5 }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <TagChipPreview name={tag.name} color={tag.color} icon={tag.icon} size="sm" />

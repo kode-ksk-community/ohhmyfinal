@@ -22,14 +22,22 @@ class FeedbackController extends Controller
      */
     public function index(): Response
     {
-        $feedbacks = Feedback::with([
+        $user = auth()->user();
+
+        $query = Feedback::with([
             'counter:id,name,branch_id',
             'counter.branch:id,name',
             'servicer:id,name',
             'tags:id,name',
         ])
-            ->select(['id','counter_id','servicer_id','branch_id','rating','sentiment_label','sentiment_score','comment','created_at'])
-            ->latest()
+            ->select(['id', 'counter_id', 'servicer_id', 'branch_id', 'rating', 'sentiment_label', 'sentiment_score', 'comment', 'created_at']);
+
+        // Branch managers can only see feedbacks from their branch
+        if ($user && $user->role === 'branch_manager') {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $feedbacks = $query->latest()
             ->paginate(50)
             ->through(fn($f) => $this->formatFeedback($f));
 
@@ -60,7 +68,10 @@ class FeedbackController extends Controller
         }
 
         // Cache tags per branch for 5 minutes — they rarely change
-        $tags = Cache::remember("tags:branch:{$counter->branch_id}", 300, fn() =>
+        $tags = Cache::remember(
+            "tags:branch:{$counter->branch_id}",
+            300,
+            fn() =>
             Tag::where(function ($q) use ($counter) {
                 $q->where('branch_id', $counter->branch_id)->orWhereNull('branch_id');
             })
@@ -143,6 +154,8 @@ class FeedbackController extends Controller
      */
     public function analytics(Request $request): JsonResponse
     {
+        $user = auth()->user();
+
         [$startDate, $endDate] = $this->parseDateRange($request);
         $branchId   = $request->query('branch_id');
         $servicerId = $request->query('servicer_id');
@@ -150,6 +163,11 @@ class FeedbackController extends Controller
         $query = Feedback::whereBetween('created_at', [$startDate, $endDate])
             ->when($branchId,   fn($q) => $q->where('branch_id', $branchId))
             ->when($servicerId, fn($q) => $q->where('servicer_id', $servicerId));
+
+        // Branch managers can only see analytics for their branch
+        if ($user && $user->role === 'branch_manager') {
+            $query->where('branch_id', $user->branch_id);
+        }
 
         // Run aggregates in a single query instead of three separate calls
         $stats = $query->selectRaw('
@@ -183,10 +201,13 @@ class FeedbackController extends Controller
         [$startDate, $endDate] = $this->parseDateRange($request);
         $limit = min((int) $request->query('limit', 10), 50); // cap to prevent abuse
 
-        $tags = Tag::whereHas('feedbacks', fn($q) =>
+        $tags = Tag::whereHas(
+            'feedbacks',
+            fn($q) =>
             $q->whereBetween('feedbacks.created_at', [$startDate, $endDate])
         )
-            ->withCount(['feedbacks as feedbacks_count' => fn($q) =>
+            ->withCount([
+                'feedbacks as feedbacks_count' => fn($q) =>
                 $q->whereBetween('feedbacks.created_at', [$startDate, $endDate])
             ])
             ->orderByDesc('feedbacks_count')
@@ -207,6 +228,13 @@ class FeedbackController extends Controller
      */
     public function destroy(Feedback $feedback): JsonResponse
     {
+        $user = auth()->user();
+
+        // Branch managers can only delete feedbacks from their branch
+        if ($user && $user->role === 'branch_manager' && $feedback->branch_id !== $user->branch_id) {
+            return response()->json(['error' => 'You do not have permission to delete this feedback.'], 403);
+        }
+
         $feedback->forceDelete();
 
         return response()->json(['message' => 'Feedback deleted successfully']);
@@ -219,12 +247,20 @@ class FeedbackController extends Controller
      */
     public function servicerPerformance(Request $request): JsonResponse
     {
+        $user = auth()->user();
+
         [$startDate, $endDate] = $this->parseDateRange($request);
 
-        $rows = Feedback::whereBetween('created_at', [$startDate, $endDate])
+        $query = Feedback::whereBetween('created_at', [$startDate, $endDate])
             ->when($request->query('branch_id'),   fn($q) => $q->where('branch_id',   $request->query('branch_id')))
-            ->when($request->query('servicer_id'), fn($q) => $q->where('servicer_id', $request->query('servicer_id')))
-            ->with('servicer:id,name')
+            ->when($request->query('servicer_id'), fn($q) => $q->where('servicer_id', $request->query('servicer_id')));
+
+        // Branch managers can only see performance for their branch
+        if ($user && $user->role === 'branch_manager') {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $rows = $query->with('servicer:id,name')
             ->selectRaw('
                 servicer_id,
                 COUNT(*) as total,
@@ -258,16 +294,24 @@ class FeedbackController extends Controller
      */
     public function servicerFeedback(Request $request): JsonResponse
     {
+        $user = auth()->user();
         $servicerId = $request->query('servicer_id');
+
         if (! $servicerId) {
             return response()->json(['error' => 'servicer_id is required'], 422);
         }
 
         [$startDate, $endDate] = $this->parseDateRange($request);
 
-        $feedbacks = Feedback::where('servicer_id', $servicerId)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->with(['counter:id,name,branch_id', 'counter.branch:id,name'])
+        $query = Feedback::where('servicer_id', $servicerId)
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        // Branch managers can only see feedbacks from their branch
+        if ($user && $user->role === 'branch_manager') {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $feedbacks = $query->with(['counter:id,name,branch_id', 'counter.branch:id,name'])
             ->latest()
             ->limit(200)
             ->get()
@@ -281,11 +325,19 @@ class FeedbackController extends Controller
      */
     public function counterPerformance(Request $request): JsonResponse
     {
+        $user = auth()->user();
+
         [$startDate, $endDate] = $this->parseDateRange($request);
 
-        $rows = Feedback::whereBetween('created_at', [$startDate, $endDate])
-            ->when($request->query('branch_id'), fn($q) => $q->where('branch_id', $request->query('branch_id')))
-            ->with('counter:id,name')
+        $query = Feedback::whereBetween('created_at', [$startDate, $endDate])
+            ->when($request->query('branch_id'), fn($q) => $q->where('branch_id', $request->query('branch_id')));
+
+        // Branch managers can only see performance for their branch
+        if ($user && $user->role === 'branch_manager') {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $rows = $query->with('counter:id,name')
             ->selectRaw('
                 counter_id,
                 COUNT(*) as total,
@@ -317,7 +369,7 @@ class FeedbackController extends Controller
      */
     public function trends(Request $request): JsonResponse
     {
-        $period     = in_array($request->query('period'), ['daily','weekly','monthly'])
+        $period     = in_array($request->query('period'), ['daily', 'weekly', 'monthly'])
             ? $request->query('period')
             : 'daily';
 

@@ -64,19 +64,85 @@ class UserController extends Controller
     }
 
     /**
+     * Check if user can manage another user.
+     * Branch managers can only manage users in their own branch.
+     */
+    private function authorizeUserAccess(User $user): ?RedirectResponse
+    {
+        $authUser = auth()->user();
+
+        // Super admin/admin can manage anyone
+        if ($authUser && in_array($authUser->role, ['super_admin', 'admin'])) {
+            return null;
+        }
+
+        // Branch managers can only manage users in their branch
+        if ($authUser && $authUser->role === 'branch_manager') {
+            if ($user->branch_id !== $authUser->branch_id) {
+                return redirect()->back()
+                    ->with('error', 'You can only manage users in your own branch.');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if user can create/update to a specific role and branch.
+     */
+    private function canManageUserType(array $validated): ?RedirectResponse
+    {
+        $authUser = auth()->user();
+
+        // Super admin/admin can do anything
+        if ($authUser && in_array($authUser->role, ['super_admin', 'admin'])) {
+            return null;
+        }
+
+        // Branch managers cannot create/manage global roles
+        if ($authUser && $authUser->role === 'branch_manager') {
+            if (in_array($validated['role'], ['super_admin', 'admin'])) {
+                return redirect()->back()
+                    ->with('error', 'You cannot manage global admin roles.');
+            }
+
+            // Branch managers can only manage their branch
+            if ($validated['branch_id'] !== $authUser->branch_id) {
+                return redirect()->back()
+                    ->with('error', 'You can only manage users in your own branch.');
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Display the admin users page.
      */
     public function index(): Response
     {
-        $users = $this->userQuery()
-            ->get()
+        $user = auth()->user();
+
+        $query = $this->userQuery();
+
+        // Branch managers can only see users in their branch
+        if ($user && $user->role === 'branch_manager') {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $users = $query->get()
             ->map(fn($u) => $this->formatUser($u));
 
-        $branches = Branch::active()->select('id', 'name')->get();
+        $branchesQuery = Branch::active()->select('id', 'name');
+
+        // Branch managers can only see their own branch
+        if ($user && $user->role === 'branch_manager') {
+            $branchesQuery->where('id', $user->branch_id);
+        }
 
         return Inertia::render('admin/users', [
             'users'    => $users,
-            'branches' => $branches,
+            'branches' => $branchesQuery->get(),
         ]);
     }
 
@@ -85,6 +151,11 @@ class UserController extends Controller
      */
     public function show(User $user): Response
     {
+        // Check authorization
+        if ($redirect = $this->authorizeUserAccess($user)) {
+            return $redirect;
+        }
+
         $user->load(['branch', 'activeQrToken']);
         $user->loadCount('feedbacks');
 
@@ -99,6 +170,11 @@ class UserController extends Controller
      */
     public function servicerStats(Request $request, User $user): JsonResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeUserAccess($user)) {
+            return response()->json(['error' => $redirect->getSession()->get('error')], 403);
+        }
+
         if (! $user->isServicer()) {
             return response()->json(['error' => 'Only servicers have stats'], 422);
         }
@@ -161,6 +237,11 @@ class UserController extends Controller
             return $redirect;
         }
 
+        // Check if user can create this type of user
+        if ($redirect = $this->canManageUserType($validated)) {
+            return $redirect;
+        }
+
         // Global roles must not be tied to a branch
         if (in_array($validated['role'], ['super_admin', 'admin'])) {
             $validated['branch_id'] = null;
@@ -179,6 +260,11 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeUserAccess($user)) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
             'email'     => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
@@ -189,6 +275,11 @@ class UserController extends Controller
         ]);
 
         if ($redirect = $this->validateBranchRule($validated)) {
+            return $redirect;
+        }
+
+        // Check if user can update to this role and branch
+        if ($redirect = $this->canManageUserType($validated)) {
             return $redirect;
         }
 
@@ -213,6 +304,11 @@ class UserController extends Controller
      */
     public function toggle(User $user): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeUserAccess($user)) {
+            return $redirect;
+        }
+
         $user->update(['is_active' => ! $user->is_active]);
 
         $status = $user->is_active ? 'activated' : 'deactivated';
@@ -226,6 +322,11 @@ class UserController extends Controller
      */
     public function generateQrToken(User $user): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeUserAccess($user)) {
+            return $redirect;
+        }
+
         if (! $user->isServicer()) {
             return redirect()->route('admin.users.index')
                 ->with('error', 'Only servicers can have QR tokens.');
@@ -246,6 +347,11 @@ class UserController extends Controller
      */
     public function revokeQrToken(User $user): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeUserAccess($user)) {
+            return $redirect;
+        }
+
         if (! $user->isServicer()) {
             return redirect()->route('admin.users.index')
                 ->with('error', 'Only servicers can have QR tokens.');
@@ -279,6 +385,11 @@ class UserController extends Controller
      */
     public function destroy(User $user): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeUserAccess($user)) {
+            return $redirect;
+        }
+
         if ($user->isCurrentlyActive()) {
             return redirect()->route('admin.users.index')
                 ->with('error', 'Cannot delete a user with an active session.');

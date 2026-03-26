@@ -24,6 +24,7 @@ class AdminDashboardController extends Controller
 
     public function stats(Request $request)
     {
+        $user = auth()->user();
         $range = $request->query('range', 'today');
 
         $now = Carbon::now();
@@ -54,25 +55,29 @@ class AdminDashboardController extends Controller
         $to = $now;
 
         $baseQuery = Feedback::whereBetween('created_at', [$from, $to]);
+        $previousQuery = Feedback::whereBetween('created_at', [$previousFrom, $previousTo]);
+
+        // Branch managers see stats only for their branch
+        if ($user && $user->role === 'branch_manager') {
+            $baseQuery->where('branch_id', $user->branch_id);
+            $previousQuery->where('branch_id', $user->branch_id);
+        }
 
         $total = $baseQuery->count();
         $avg = round((float) $baseQuery->avg('rating') ?: 0, 2);
 
-        $previousQuery = Feedback::whereBetween('created_at', [$previousFrom, $previousTo]);
         $previousTotal = $previousQuery->count();
 
         $growth = $previousTotal > 0 ? round((($total - $previousTotal) / $previousTotal) * 100, 1) : null;
 
-        $ratingDist = Feedback::select('rating', DB::raw('count(*) as count'))
-            ->whereBetween('created_at', [$from, $to])
+        $ratingDist = (clone $baseQuery)->select('rating', DB::raw('count(*) as count'))
             ->groupBy('rating')
             ->pluck('count', 'rating')
             ->toArray();
 
         $ratingDistFull = array_map(fn($i) => intval($ratingDist[$i] ?? 0), [1, 2, 3, 4, 5]);
 
-        $servicers = Feedback::select('servicer_id', DB::raw('count(*) as total'), DB::raw('avg(rating) as avg'))
-            ->whereBetween('created_at', [$from, $to])
+        $servicers = (clone $baseQuery)->select('servicer_id', DB::raw('count(*) as total'), DB::raw('avg(rating) as avg'))
             ->groupBy('servicer_id')
             ->with('servicer:id,name')
             ->orderByDesc('avg')
@@ -96,7 +101,7 @@ class AdminDashboardController extends Controller
                 'sentiment' => $tag->sentiment ?? 'neutral',
             ]);
 
-        $feed = Feedback::with(['servicer:id,name', 'counter:id,name,branch_id', 'counter.branch:id,name'])
+        $feed = (clone $baseQuery)->with(['servicer:id,name', 'counter:id,name,branch_id', 'counter.branch:id,name'])
             ->latest()
             ->limit(8)
             ->get()

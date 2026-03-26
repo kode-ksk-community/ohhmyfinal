@@ -13,6 +13,32 @@ use Illuminate\Support\Facades\Hash;
 class CounterController extends Controller
 {
     /**
+     * Authorize counter access - checks if user can access this counter.
+     */
+    private function authorizeCounterAccess(Counter $counter): ?RedirectResponse
+    {
+        $user = auth()->user();
+        if ($user && $user->role === 'branch_manager' && $counter->branch_id !== $user->branch_id) {
+            return redirect()->back()
+                ->with('error', 'You do not have permission to access this counter.');
+        }
+        return null;
+    }
+
+    /**
+     * Check if user can only manage their branch's counters.
+     */
+    private function canCreateCounter(int $branchId): ?RedirectResponse
+    {
+        $user = auth()->user();
+        if ($user && $user->role === 'branch_manager' && $branchId !== $user->branch_id) {
+            return redirect()->back()
+                ->with('error', 'You can only manage counters in your own branch.');
+        }
+        return null;
+    }
+
+    /**
      * Shared eager-load query for counters.
      */
     private function counterQuery()
@@ -47,11 +73,26 @@ class CounterController extends Controller
      */
     public function index(): Response
     {
-        $counters = $this->counterQuery()
-            ->get()
+        $user = auth()->user();
+        
+        $query = $this->counterQuery();
+        
+        // Branch managers can only see counters in their branch
+        if ($user && $user->role === 'branch_manager') {
+            $query->where('branch_id', $user->branch_id);
+        }
+        
+        $counters = $query->get()
             ->map(fn($c) => $this->formatCounter($c));
 
-        $branches = Branch::active()->select('id', 'name')->get();
+        $branchesQuery = Branch::active()->select('id', 'name');
+        
+        // Branch managers can only see their own branch
+        if ($user && $user->role === 'branch_manager') {
+            $branchesQuery->where('id', $user->branch_id);
+        }
+        
+        $branches = $branchesQuery->get();
 
         return Inertia::render('admin/counters', [
             'counters' => $counters,
@@ -72,6 +113,11 @@ class CounterController extends Controller
             'is_active'   => 'boolean',
         ]);
 
+        // Check if user can create counter in this branch
+        if ($redirect = $this->canCreateCounter($validated['branch_id'])) {
+            return $redirect;
+        }
+
         $validated['pin'] = Hash::make($validated['pin']);
 
         Counter::create($validated);
@@ -79,12 +125,18 @@ class CounterController extends Controller
         return redirect()->route('admin.counters.index')
             ->with('success', 'Counter created successfully.');
     }
+    
 
     /**
      * Update the specified counter.
      */
     public function update(Request $request, Counter $counter): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeCounterAccess($counter)) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'branch_id'   => 'required|exists:branches,id',
             'name'        => 'required|string|max:255',
@@ -92,6 +144,11 @@ class CounterController extends Controller
             'pin'         => 'nullable|string|min:4|max:10',
             'is_active'   => 'boolean',
         ]);
+
+        // Check if user can update to this branch
+        if ($redirect = $this->canCreateCounter($validated['branch_id'])) {
+            return $redirect;
+        }
 
         // Only re-hash if a new PIN was provided
         if (!empty($validated['pin'])) {
@@ -111,6 +168,11 @@ class CounterController extends Controller
      */
     public function toggle(Counter $counter): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeCounterAccess($counter)) {
+            return $redirect;
+        }
+
         $counter->update(['is_active' => ! $counter->is_active]);
 
         $status = $counter->is_active ? 'activated' : 'deactivated';
@@ -124,6 +186,11 @@ class CounterController extends Controller
      */
     public function forceEndSession(Counter $counter): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeCounterAccess($counter)) {
+            return $redirect;
+        }
+
         if ($counter->activeSession) {
             $counter->activeSession->update(['ended_at' => now()]);
         }
@@ -138,6 +205,11 @@ class CounterController extends Controller
      */
     public function destroy(Counter $counter): RedirectResponse
     {
+        // Check authorization
+        if ($redirect = $this->authorizeCounterAccess($counter)) {
+            return $redirect;
+        }
+
         if ($counter->isOccupied()) {
             return redirect()->route('admin.counters.index')
                 ->with('error', 'Cannot delete a counter with an active session. Please end the session first.');
