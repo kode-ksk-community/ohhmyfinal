@@ -1,14 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-
-export default function LandingPage() {
-
-    const prop = usePage().props;
-    
-    return (
-        <>
-            <Head title="FeedbackPro" />
-
-            <style>{`
+import{K as n,j as e,L as o,$ as i}from"./app-I2KpIaTR.js";function d(){var r,a;const t=n().props;return e.jsxs(e.Fragment,{children:[e.jsx(o,{title:"FeedbackPro"}),e.jsx("style",{children:`
                 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
                 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -180,53 +170,4 @@ export default function LandingPage() {
                     0%, 100% { opacity: 0.9; transform: scale(1); }
                     50%       { opacity: 0.45; transform: scale(0.88); }
                 }
-            `}</style>
-
-            <div className="root">
-                <div className="card">
-
-                    {/* Badge */}
-                    <div className="badge">
-                        <span className="badge-dot" />
-                        <span className="badge-text">Feedback Intelligence</span>
-                    </div>
-
-                    {/* Title */}
-                    <h1 className="title">
-                        Feedback<br /><em>Pro</em>
-                    </h1>
-
-                    {/* Subtitle */}
-                    <p className="subtitle">
-                        Capture customer voices, activate servicers, and turn every interaction into insight.
-                    </p>
-
-                    <div className="divider" />
-
-                    {/* Buttons */}
-                    <div className="btn-group">
-                        {prop?.auth?.user?.role !== "servicer" ? (
-                            <Link href="/counter/setup" className="btn btn-primary">
-                                Set Up a Counter
-                                <svg className="btn-arrow" viewBox="0 0 14 14" fill="none">
-                                    <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                            </Link>
-                        ) : null}
-                        {}
-                        <Link href={route('dashboard')} className="btn btn-secondary">
-                            Open Admin Panel
-                            <svg className="btn-arrow" viewBox="0 0 14 14" fill="none">
-                                <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                        </Link>
-                    </div>
-
-                </div>
-
-                {/* Footer */}
-                <p className="footer-hint">This device will remember its counter after setup</p>
-            </div>
-        </>
-    );
-}
+            `}),e.jsxs("div",{className:"root",children:[e.jsxs("div",{className:"card",children:[e.jsxs("div",{className:"badge",children:[e.jsx("span",{className:"badge-dot"}),e.jsx("span",{className:"badge-text",children:"Feedback Intelligence"})]}),e.jsxs("h1",{className:"title",children:["Feedback",e.jsx("br",{}),e.jsx("em",{children:"Pro"})]}),e.jsx("p",{className:"subtitle",children:"Capture customer voices, activate servicers, and turn every interaction into insight."}),e.jsx("div",{className:"divider"}),e.jsxs("div",{className:"btn-group",children:[((a=(r=t==null?void 0:t.auth)==null?void 0:r.user)==null?void 0:a.role)!=="servicer"?e.jsxs(i,{href:"/counter/setup",className:"btn btn-primary",children:["Set Up a Counter",e.jsx("svg",{className:"btn-arrow",viewBox:"0 0 14 14",fill:"none",children:e.jsx("path",{d:"M2 7h10M8 3l4 4-4 4",stroke:"currentColor",strokeWidth:"1.5",strokeLinecap:"round",strokeLinejoin:"round"})})]}):null,e.jsxs(i,{href:route("dashboard"),className:"btn btn-secondary",children:["Open Admin Panel",e.jsx("svg",{className:"btn-arrow",viewBox:"0 0 14 14",fill:"none",children:e.jsx("path",{d:"M2 7h10M8 3l4 4-4 4",stroke:"currentColor",strokeWidth:"1.5",strokeLinecap:"round",strokeLinejoin:"round"})})]})]})]}),e.jsx("p",{className:"footer-hint",children:"This device will remember its counter after setup"})]})]})}export{d as default};

@@ -6,49 +6,82 @@ use App\Models\User;
 use App\Models\Branch;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
     /**
-     * Display the admin users page with data.
+     * Shared eager-load query for users.
+     */
+    private function userQuery()
+    {
+        return User::with(['branch', 'activeQrToken'])
+            ->withCount('feedbacks')
+            ->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Map a User model to the shape the frontend expects.
+     */
+    private function formatUser(User $user): array
+    {
+        return [
+            'id'             => $user->id,
+            'name'           => $user->name,
+            'email'          => $user->email,
+            'role'           => $user->role,
+            'branch_id'      => $user->branch_id,
+            'branch_name'    => $user->branch?->name,
+            'is_active'      => (bool) $user->is_active,
+            'has_qr_token'   => $user->activeQrToken !== null,
+            'feedback_count' => $user->feedbacks_count ?? 0,
+            'last_active'    => $user->isCurrentlyActive() ? 'Now' : null,
+            'created_at'     => $user->created_at->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * Validate that branch-scoped roles have a branch assigned.
+     * Returns a redirect with an error if the rule is violated, or null if OK.
+     */
+    private function validateBranchRule(array $validated): ?RedirectResponse
+    {
+        $scopedRoles = ['branch_manager', 'servicer'];
+
+        if (in_array($validated['role'], $scopedRoles) && empty($validated['branch_id'])) {
+            return redirect()->back()
+                ->withErrors(['branch_id' => 'Branch is required for this role.'])
+                ->withInput();
+        }
+
+        return null;
+    }
+
+    /**
+     * Display the admin users page.
      */
     public function index(): Response
     {
-        $users = User::with(['branch', 'activeQrToken'])
-            ->withCount('feedbacks')
-            ->orderBy('created_at', 'desc')
+        $users = $this->userQuery()
             ->get()
-            ->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'branch_id' => $user->branch_id,
-                    'branch_name' => $user->branch?->name,
-                    'is_active' => $user->is_active,
-                    'has_qr_token' => $user->activeQrToken !== null,
-                    'feedback_count' => $user->feedbacks_count,
-                    'last_active' => $user->isCurrentlyActive() ? 'Now' : null,
-                    'created_at' => $user->created_at->format('Y-m-d'),
-                ];
-            });
+            ->map(fn($u) => $this->formatUser($u));
 
         $branches = Branch::active()->select('id', 'name')->get();
 
         return Inertia::render('admin/users', [
-            'users' => $users,
+            'users'    => $users,
             'branches' => $branches,
         ]);
     }
 
     /**
-     * Show a user's detail page (admin view).
+     * Show a single user's detail page (admin view).
      */
     public function show(User $user): Response
     {
@@ -56,50 +89,29 @@ class UserController extends Controller
         $user->loadCount('feedbacks');
 
         return Inertia::render('admin/user-detail', [
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'branch_id' => $user->branch_id,
-                'branch_name' => $user->branch?->name,
-                'is_active' => $user->is_active,
-                'has_qr_token' => $user->activeQrToken !== null,
-                'feedback_count' => $user->feedbacks_count,
-                'last_active' => $user->isCurrentlyActive() ? 'Now' : null,
-                'created_at' => $user->created_at->format('Y-m-d'),
-            ],
+            'user' => $this->formatUser($user),
         ]);
     }
 
     /**
-     * Get servicer stats for user-detail (web guard, not API auth issue)
+     * Servicer stats endpoint — intentionally stays as JSON
+     * because it is polled by the UserDetail page via fetch, not Inertia.
      */
     public function servicerStats(Request $request, User $user): JsonResponse
     {
-        if (!$user->isServicer()) {
+        if (! $user->isServicer()) {
             return response()->json(['error' => 'Only servicers have stats'], 422);
         }
 
         $period = $request->query('period', 'monthly');
-        $end = Carbon::now();
-        switch ($period) {
-            case 'daily':
-                $start = $end->copy()->startOfDay();
-                break;
-            case 'weekly':
-                $start = $end->copy()->startOfWeek();
-                break;
-            case 'monthly':
-                $start = $end->copy()->startOfMonth();
-                break;
-            case 'yearly':
-                $start = $end->copy()->startOfYear();
-                break;
-            default:
-                $start = $end->copy()->subMonth();
-                break;
-        }
+        $end    = Carbon::now();
+
+        $start = match ($period) {
+            'daily'   => $end->copy()->startOfDay(),
+            'weekly'  => $end->copy()->startOfWeek(),
+            'yearly'  => $end->copy()->startOfYear(),
+            default   => $end->copy()->startOfMonth(),
+        };
 
         $feedbacks = $user->feedbacks()
             ->whereBetween('created_at', [$start, $end])
@@ -108,27 +120,25 @@ class UserController extends Controller
             ->limit(300)
             ->get();
 
-        $total = $feedbacks->count();
-        $averageRating = $feedbacks->avg('rating') ?? 0;
-        $averageSentiment = $feedbacks->avg('sentiment_score') ?? 0;
+        $total    = $feedbacks->count();
         $positive = $feedbacks->where('rating', '>=', 4)->count();
         $negative = $feedbacks->where('rating', '<=', 2)->count();
 
         return response()->json([
-            'total_feedbacks' => $total,
-            'average_rating' => round($averageRating, 2),
-            'average_sentiment' => round($averageSentiment, 3),
-            'positive_percentage' => $total ? round(100 * $positive / $total, 1) : 0,
-            'negative_percentage' => $total ? round(100 * $negative / $total, 1) : 0,
-            'feedbacks' => $feedbacks->map(fn($f) => [
-                'id' => $f->id,
-                'rating' => $f->rating,
+            'total_feedbacks'      => $total,
+            'average_rating'       => round($feedbacks->avg('rating') ?? 0, 2),
+            'average_sentiment'    => round($feedbacks->avg('sentiment_score') ?? 0, 3),
+            'positive_percentage'  => $total ? round(100 * $positive / $total, 1) : 0,
+            'negative_percentage'  => $total ? round(100 * $negative / $total, 1) : 0,
+            'feedbacks'            => $feedbacks->map(fn($f) => [
+                'id'              => $f->id,
+                'rating'          => $f->rating,
                 'sentiment_label' => $f->sentiment_label,
                 'sentiment_score' => $f->sentiment_score,
-                'comment' => $f->comment,
-                'counter_name' => $f->counter?->name ?? 'Unknown',
-                'branch_name' => $f->counter?->branch?->name ?? 'Unknown',
-                'submitted_at' => $f->created_at->format('Y-m-d H:i'),
+                'comment'         => $f->comment,
+                'counter_name'    => $f->counter?->name ?? 'Unknown',
+                'branch_name'     => $f->counter?->branch?->name ?? 'Unknown',
+                'submitted_at'    => $f->created_at->format('Y-m-d H:i'),
             ]),
         ]);
     }
@@ -136,77 +146,57 @@ class UserController extends Controller
     /**
      * Store a newly created user.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'role' => 'required|in:super_admin,admin,branch_manager,servicer',
+            'name'      => 'required|string|max:255',
+            'email'     => 'required|string|email|max:255|unique:users',
+            'password'  => 'required|string|min:8',
+            'role'      => 'required|in:super_admin,admin,branch_manager,servicer',
             'branch_id' => 'nullable|exists:branches,id',
             'is_active' => 'boolean',
         ]);
 
-        // Validate branch requirement for certain roles
-        if (in_array($validated['role'], ['branch_manager', 'servicer']) && !$validated['branch_id']) {
-            return response()->json(['error' => 'Branch is required for this role'], 422);
+        if ($redirect = $this->validateBranchRule($validated)) {
+            return $redirect;
         }
 
-        // For super_admin and admin, ensure branch_id is null
+        // Global roles must not be tied to a branch
         if (in_array($validated['role'], ['super_admin', 'admin'])) {
             $validated['branch_id'] = null;
         }
 
         $validated['password'] = Hash::make($validated['password']);
 
-        $user = User::create($validated);
+        User::create($validated);
 
-        // Load relationships for response
-        $user->load(['branch', 'activeQrToken']);
-        $user->loadCount('feedbacks');
-
-        return back()->with('success', 'User created successfully');
-        // return response()->json([
-        //     'id' => $user->id,
-        //     'name' => $user->name,
-        //     'email' => $user->email,
-        //     'role' => $user->role,
-        //     'branch_id' => $user->branch_id,
-        //     'branch_name' => $user->branch?->name,
-        //     'is_active' => $user->is_active,
-        //     'has_qr_token' => $user->activeQrToken !== null,
-        //     'feedback_count' => $user->feedbacks_count,
-        //     'last_active' => $user->isCurrentlyActive() ? 'Now' : null,
-        //     'created_at' => $user->created_at->format('Y-m-d'),
-        // ]);
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User created successfully.');
     }
 
     /**
      * Update the specified user.
      */
-    public function update(Request $request, User $user): JsonResponse
+    public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'password' => 'nullable|string|min:8',
-            'role' => 'required|in:super_admin,admin,branch_manager,servicer',
+            'name'      => 'required|string|max:255',
+            'email'     => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'password'  => 'nullable|string|min:8',
+            'role'      => 'required|in:super_admin,admin,branch_manager,servicer',
             'branch_id' => 'nullable|exists:branches,id',
             'is_active' => 'boolean',
         ]);
 
-        // Validate branch requirement for certain roles
-        if (in_array($validated['role'], ['branch_manager', 'servicer']) && !$validated['branch_id']) {
-            return response()->json(['error' => 'Branch is required for this role'], 422);
+        if ($redirect = $this->validateBranchRule($validated)) {
+            return $redirect;
         }
 
-        // For super_admin and admin, ensure branch_id is null
         if (in_array($validated['role'], ['super_admin', 'admin'])) {
             $validated['branch_id'] = null;
         }
 
-        // Only update password if provided
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
@@ -214,113 +204,89 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        // Load relationships for response
-        $user->load(['branch', 'activeQrToken']);
-        $user->loadCount('feedbacks');
-
-        return response()->json([
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'branch_id' => $user->branch_id,
-            'branch_name' => $user->branch?->name,
-            'is_active' => $user->is_active,
-            'has_qr_token' => $user->activeQrToken !== null,
-            'feedback_count' => $user->feedbacks_count,
-            'last_active' => $user->isCurrentlyActive() ? 'Now' : null,
-            'created_at' => $user->created_at->format('Y-m-d'),
-        ]);
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User updated successfully.');
     }
 
     /**
      * Toggle the active status of the user.
      */
-    public function toggle(User $user): JsonResponse
+    public function toggle(User $user): RedirectResponse
     {
-        $user->update(['is_active' => !$user->is_active]);
+        $user->update(['is_active' => ! $user->is_active]);
 
-        return response()->json([
-            'is_active' => $user->is_active,
-        ]);
+        $status = $user->is_active ? 'activated' : 'deactivated';
+
+        return redirect()->route('admin.users.index')
+            ->with('success', "{$user->name} {$status} successfully.");
     }
 
     /**
-     * Generate or regenerate QR token for a servicer.
+     * Generate (or regenerate) a QR login token for a servicer.
      */
-    public function generateQrToken(User $user): JsonResponse
+    public function generateQrToken(User $user): RedirectResponse
     {
-        if (!$user->isServicer()) {
-            return response()->json(['error' => 'Only servicers can have QR tokens'], 422);
+        if (! $user->isServicer()) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Only servicers can have QR tokens.');
         }
 
-        // Deactivate existing tokens
         $user->qrTokens()->update(['is_active' => false]);
-
-        // Create new token
         $user->qrTokens()->create([
-            'token' => \Illuminate\Support\Str::random(64),
+            'token'     => Str::random(64),
             'is_active' => true,
         ]);
 
-        return response()->json(['message' => 'QR token generated successfully']);
+        return redirect()->route('admin.users.index')
+            ->with('success', "QR token generated for {$user->name}.");
     }
 
     /**
-     * Revoke QR token for a servicer.
+     * Revoke the active QR token for a servicer.
      */
-    public function revokeQrToken(User $user): JsonResponse
+    public function revokeQrToken(User $user): RedirectResponse
     {
-        if (!$user->isServicer()) {
-            return response()->json(['error' => 'Only servicers can have QR tokens'], 422);
+        if (! $user->isServicer()) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Only servicers can have QR tokens.');
         }
 
         $user->qrTokens()->update(['is_active' => false]);
 
-        return response()->json(['message' => 'QR token revoked successfully']);
+        return redirect()->route('admin.users.index')
+            ->with('success', "QR token revoked for {$user->name}.");
     }
 
     /**
-     * Send password reset link to user.
+     * Send a password reset link to the user.
      */
-    public function resetPassword(User $user): JsonResponse
+    public function resetPassword(User $user): RedirectResponse
     {
-        // Generate a password reset token
-        $token = \Illuminate\Support\Str::random(64);
-
-        // Store the token in password_resets table or similar
-        // For now, we'll send a reset email with a temporary password or token
-        // In production, you'd use Laravel's password reset broker
-
         try {
-            // Generate a temporary password for demo purposes
-            // In production, use proper password reset tokens
-            $temporaryPassword = \Illuminate\Support\Str::random(12);
+            // Use Laravel's built-in password reset broker
+            \Password::sendResetLink(['email' => $user->email]);
 
-            // You can send email here or just return success
-            // \Mail::to($user->email)->send(new ResetPasswordMail($user, $token));
-
-            return response()->json([
-                'message' => 'Password reset email sent to ' . $user->email,
-                'success' => true,
-            ]);
+            return redirect()->route('admin.users.index')
+                ->with('success', "Password reset email sent to {$user->email}.");
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to send password reset email'], 500);
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Failed to send password reset email.');
         }
     }
 
     /**
-     * Remove the specified user (soft delete).
+     * Soft-delete the specified user.
      */
-    public function destroy(User $user): JsonResponse
+    public function destroy(User $user): RedirectResponse
     {
-        // Check if user is currently active
         if ($user->isCurrentlyActive()) {
-            return response()->json(['error' => 'Cannot delete user with active session'], 422);
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Cannot delete a user with an active session.');
         }
 
         $user->delete();
 
-        return response()->json(['message' => 'User deleted successfully']);
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User deleted successfully.');
     }
 }

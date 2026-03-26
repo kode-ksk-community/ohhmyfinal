@@ -7,15 +7,18 @@ use App\Models\Tag;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class FeedbackController extends Controller
 {
+    // ─── Admin Pages ──────────────────────────────────────────────────────────
+
     /**
-     * Display admin feedback page with filtering and search.
-     * Optimized with eager loading to prevent N+1 queries.
+     * Display admin feedback page.
+     * Eagerly loads all relations to prevent N+1 queries.
      */
     public function index(): Response
     {
@@ -23,236 +26,184 @@ class FeedbackController extends Controller
             'counter:id,name,branch_id',
             'counter.branch:id,name',
             'servicer:id,name',
-            'tags:id,name'
+            'tags:id,name',
         ])
-            ->select([
-                'id',
-                'counter_id',
-                'counter_session_id',
-                'servicer_id',
-                'branch_id',
-                'rating',
-                'sentiment_label',
-                'sentiment_score',
-                'comment',
-                'created_at'
-            ])
-            ->orderBy('created_at', 'desc')
+            ->select(['id','counter_id','servicer_id','branch_id','rating','sentiment_label','sentiment_score','comment','created_at'])
+            ->latest()
             ->paginate(50)
-            ->through(function ($feedback) {
-                return [
-                    'id' => $feedback->id,
-                    'rating' => $feedback->rating,
-                    'sentiment_label' => $feedback->sentiment_label,
-                    'sentiment_score' => $feedback->sentiment_score,
-                    'comment' => $feedback->comment,
-                    'counter_name' => $feedback->counter->name,
-                    'branch_name' => $feedback->counter->branch->name,
-                    'servicer_name' => $feedback->servicer?->name ?? 'Unknown',
-                    'tags' => $feedback->tags->pluck('name')->toArray(),
-                    'submitted_at' => $feedback->created_at->format('Y-m-d H:i'),
-                ];
-            });
+            ->through(fn($f) => $this->formatFeedback($f));
 
-        return Inertia::render('admin/feedback', [
-            'feedbacks' => $feedbacks,
-        ]);
+        return Inertia::render('admin/feedback', compact('feedbacks'));
     }
 
+    // ─── Counter Device API ───────────────────────────────────────────────────
+
     /**
-     * Get feedback data for display on counter device.
-     * Called by CounterFeedback.tsx on mount.
+     * Return counter session data for the kiosk UI.
      */
     public function data(Request $request): JsonResponse
     {
-        // Get counter from middleware attribute; not from request input
         $counter = $request->attributes->get('counter');
-        if (!$counter instanceof \App\Models\Counter) {
-            return response()->json(['error' => 'Invalid or missing counter token'], 401);
+
+        if (! $counter instanceof \App\Models\Counter) {
+            return $this->counterError();
         }
 
         $session = $counter->activeSession()->with('servicer')->first();
 
-        if (!$session) {
+        if (! $session) {
             return response()->json(['error' => 'No active session'], 404);
         }
 
-        $servicer = $session->servicer;
-        if (!$servicer) {
+        if (! $session->servicer) {
             return response()->json(['error' => 'Active session has no servicer attached'], 500);
         }
 
-        // Get tags for this branch (or global tags)
-        $tags = Tag::where(function ($query) use ($counter) {
-            $query->where('branch_id', $counter->branch_id)
-                ->orWhereNull('branch_id');
-        })
-            ->where('is_active', true)
-            ->orderBy('sort_order', 'asc')
-            ->select('id', 'name', 'color', 'sentiment')
-            ->get();
+        // Cache tags per branch for 5 minutes — they rarely change
+        $tags = Cache::remember("tags:branch:{$counter->branch_id}", 300, fn() =>
+            Tag::where(function ($q) use ($counter) {
+                $q->where('branch_id', $counter->branch_id)->orWhereNull('branch_id');
+            })
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'color', 'sentiment'])
+        );
 
         return response()->json([
             'servicer' => [
-                'id' => $servicer->id,
-                'name' => $servicer->name,
-                'avatar_url' => $servicer->avatar,
+                'id'         => $session->servicer->id,
+                'name'       => $session->servicer->name,
+                'avatar_url' => $session->servicer->avatar,
             ],
             'tags' => $tags,
         ]);
     }
 
     /**
-     * Store a customer feedback submission.
-     * Called by CounterFeedback.tsx step 3 (submit button).
-     * Anonymous submission — no authentication required.
+     * Store a new feedback submission from a counter kiosk.
      */
     public function store(Request $request): JsonResponse
     {
-        try {
-            $counter = $request->attributes->get('counter');
-            if (!$counter instanceof \App\Models\Counter) {
-                \Log::warning('Invalid or missing counter in feedback store', [
-                    'counter' => $counter,
-                    'type' => gettype($counter),
-                ]);
-                return response()->json(['error' => 'Invalid or missing counter token'], 401);
-            }
+        $counter = $request->attributes->get('counter');
 
-            $session = $counter->activeSession()->with('servicer')->first();
-            if (!$session) {
-                \Log::warning('No active session for counter in feedback store', [
-                    'counter_id' => $counter->id,
-                ]);
-                return response()->json(['error' => 'No active session'], 404);
-            }
-
-            if (!$session->servicer) {
-                \Log::warning('Active session has no servicer in feedback store', [
-                    'session_id' => $session->id,
-                    'servicer_id' => $session->servicer_id,
-                ]);
-                return response()->json(['error' => 'Active session has no servicer attached'], 500);
-            }
-
-            $validated = $request->validate([
-                'rating' => 'required|integer|min:1|max:5',
-                'tag_ids' => 'nullable|array',
-                'tag_ids.*' => 'integer|exists:tags,id',
-                'comment' => 'nullable|string|max:1000',
-            ]);
-
-            $feedback = Feedback::create([
-                'counter_id' => $counter->id,
-                'counter_session_id' => $session->id,
-                'servicer_id' => $session->servicer->id,
-                'branch_id' => $counter->branch_id,
-                'rating' => $validated['rating'],
-                'comment' => $validated['comment'] ?? null,
-                'submitted_ip' => $request->ip(),
-                'sentiment_score' => $this->calculateSentimentScore(
-                    $validated['rating'],
-                    $validated['tag_ids'] ?? []
-                ),
-            ]);
-
-            // Attach tags
-            if (!empty($validated['tag_ids'])) {
-                $feedback->tags()->attach($validated['tag_ids']);
-
-                // Set sentiment label based on tags
-                $feedback->sentiment_label = $this->determineSentimentLabel($feedback);
-                $feedback->save();
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Thank you for your feedback!',
-                'feedback_id' => $feedback->id,
-            ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::warning('Validation error in feedback store', $e->errors());
-            throw $e; // Re-throw to let Laravel handle it
-        } catch (\Exception $e) {
-            \Log::error('Exception in feedback store', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return response()->json(['error' => 'Failed to submit feedback: ' . $e->getMessage()], 500);
+        if (! $counter instanceof \App\Models\Counter) {
+            Log::warning('Feedback store: invalid counter token', ['type' => gettype($counter)]);
+            return $this->counterError();
         }
+
+        $session = $counter->activeSession()->with('servicer')->first();
+
+        if (! $session) {
+            Log::warning('Feedback store: no active session', ['counter_id' => $counter->id]);
+            return response()->json(['error' => 'No active session'], 404);
+        }
+
+        if (! $session->servicer) {
+            Log::warning('Feedback store: session has no servicer', ['session_id' => $session->id]);
+            return response()->json(['error' => 'Active session has no servicer attached'], 500);
+        }
+
+        $data = $request->validate([
+            'rating'     => 'required|integer|min:1|max:5',
+            'tag_ids'    => 'nullable|array',
+            'tag_ids.*'  => 'integer|exists:tags,id',
+            'comment'    => 'nullable|string|max:1000',
+        ]);
+
+        $tagIds        = $data['tag_ids'] ?? [];
+        $sentimentScore = $this->calculateSentimentScore($data['rating'], $tagIds);
+
+        $feedback = Feedback::create([
+            'counter_id'         => $counter->id,
+            'counter_session_id' => $session->id,
+            'servicer_id'        => $session->servicer->id,
+            'branch_id'          => $counter->branch_id,
+            'rating'             => $data['rating'],
+            'comment'            => $data['comment'] ?? null,
+            'submitted_ip'       => $request->ip(),
+            'sentiment_score'    => $sentimentScore,
+            'sentiment_label'    => $this->scoreToLabel($sentimentScore),
+        ]);
+
+        if (! empty($tagIds)) {
+            $feedback->tags()->attach($tagIds);
+        }
+
+        return response()->json([
+            'success'     => true,
+            'message'     => 'Thank you for your feedback!',
+            'feedback_id' => $feedback->id,
+        ], 201);
     }
 
+    // ─── Analytics API ────────────────────────────────────────────────────────
+
     /**
-     * Get feedback analytics for reports.
+     * Aggregate analytics for a date range / branch / servicer.
      */
     public function analytics(Request $request): JsonResponse
     {
-        $startDate = $request->query('start_date', now()->subDays(30));
-        $endDate = $request->query('end_date', now());
-        $branchId = $request->query('branch_id');
+        [$startDate, $endDate] = $this->parseDateRange($request);
+        $branchId   = $request->query('branch_id');
         $servicerId = $request->query('servicer_id');
 
-        $query = Feedback::whereBetween('created_at', [$startDate, $endDate]);
+        $query = Feedback::whereBetween('created_at', [$startDate, $endDate])
+            ->when($branchId,   fn($q) => $q->where('branch_id', $branchId))
+            ->when($servicerId, fn($q) => $q->where('servicer_id', $servicerId));
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        }
+        // Run aggregates in a single query instead of three separate calls
+        $stats = $query->selectRaw('
+            COUNT(*) as total,
+            ROUND(AVG(rating), 2) as avg_rating
+        ')->first();
 
-        if ($servicerId) {
-            $query->where('servicer_id', $servicerId);
-        }
-
-        $totalFeedback = $query->count();
-        $averageRating = $query->avg('rating') ?? 0;
-
-        $ratingDistribution = $query->selectRaw('rating, COUNT(*) as count')
+        $ratingDist = (clone $query)
+            ->selectRaw('rating, COUNT(*) as count')
             ->groupBy('rating')
-            ->pluck('count', 'rating')
-            ->toArray();
+            ->pluck('count', 'rating');
 
-        $sentimentDistribution = $query->selectRaw('sentiment_label, COUNT(*) as count')
+        $sentimentDist = (clone $query)
+            ->selectRaw('sentiment_label, COUNT(*) as count')
             ->groupBy('sentiment_label')
-            ->pluck('count', 'sentiment_label')
-            ->toArray();
+            ->pluck('count', 'sentiment_label');
 
         return response()->json([
-            'total_feedback' => $totalFeedback,
-            'average_rating' => round($averageRating, 2),
-            'rating_distribution' => $ratingDistribution,
-            'sentiment_distribution' => $sentimentDistribution,
+            'total_feedback'         => (int) ($stats->total ?? 0),
+            'average_rating'         => (float) ($stats->avg_rating ?? 0),
+            'rating_distribution'    => $ratingDist,
+            'sentiment_distribution' => $sentimentDist,
         ]);
     }
 
     /**
-     * Get top tags by usage.
+     * Top tags by usage count within a date range.
      */
     public function topTags(Request $request): JsonResponse
     {
-        $limit = $request->query('limit', 10);
-        $startDate = $request->query('start_date', now()->subDays(30));
-        $endDate = $request->query('end_date', now());
+        [$startDate, $endDate] = $this->parseDateRange($request);
+        $limit = min((int) $request->query('limit', 10), 50); // cap to prevent abuse
 
-        $topTags = Tag::whereHas('feedbacks', function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('feedbacks.created_at', [$startDate, $endDate]);
-        })
-            ->withCount('feedbacks')
+        $tags = Tag::whereHas('feedbacks', fn($q) =>
+            $q->whereBetween('feedbacks.created_at', [$startDate, $endDate])
+        )
+            ->withCount(['feedbacks as feedbacks_count' => fn($q) =>
+                $q->whereBetween('feedbacks.created_at', [$startDate, $endDate])
+            ])
             ->orderByDesc('feedbacks_count')
             ->limit($limit)
             ->get(['id', 'name', 'color'])
-            ->map(function ($tag) {
-                return [
-                    'id' => $tag->id,
-                    'name' => $tag->name,
-                    'color' => $tag->color,
-                    'count' => $tag->feedbacks_count,
-                ];
-            });
+            ->map(fn($tag) => [
+                'id'    => $tag->id,
+                'name'  => $tag->name,
+                'color' => $tag->color,
+                'count' => $tag->feedbacks_count,
+            ]);
 
-        return response()->json(['tags' => $topTags]);
+        return response()->json(['tags' => $tags]);
     }
 
     /**
-     * Delete feedback (admin only).
+     * Delete a feedback record (hard delete).
      */
     public function destroy(Feedback $feedback): JsonResponse
     {
@@ -261,225 +212,230 @@ class FeedbackController extends Controller
         return response()->json(['message' => 'Feedback deleted successfully']);
     }
 
-    // ─── Helper Methods ──────────────────────────────────────────────────────
+    // ─── Performance Reports ──────────────────────────────────────────────────
 
     /**
-     * Calculate sentiment score based on rating and tags.
-     * Returns value between -1.0 and +1.0
-     */
-    private function calculateSentimentScore(int $rating, array $tagIds = []): float
-    {
-        // Base score from rating (1-5 → -1.0 to +1.0)
-        $ratingScore = ($rating - 3) / 2;
-
-        // Get tag sentiment modifiers
-        $tagScore = 0;
-        if (!empty($tagIds)) {
-            $tags = Tag::whereIn('id', $tagIds)->get();
-            foreach ($tags as $tag) {
-                $tagScore += match ($tag->sentiment) {
-                    'very_positive' => 0.4,
-                    'positive' => 0.2,
-                    'neutral' => 0,
-                    'negative' => -0.2,
-                    'very_negative' => -0.4,
-                    default => 0,
-                };
-            }
-            // Average tag scores
-            $tagScore = $tagScore / count($tags);
-        }
-
-        // Combine scores
-        $combined = ($ratingScore * 0.7) + ($tagScore * 0.3);
-
-        // Clamp to -1.0 to +1.0
-        return max(-1.0, min(1.0, $combined));
-    }
-
-    /**
-     * Determine sentiment label from feedback data.
-     */
-    private function determineSentimentLabel(Feedback $feedback): ?string
-    {
-        $score = $feedback->sentiment_score ?? 0;
-
-        return match (true) {
-            $score >= 0.6 => 'very_positive',
-            $score >= 0.2 => 'positive',
-            $score >= -0.2 => 'neutral',
-            $score >= -0.6 => 'negative',
-            default => 'very_negative',
-        };
-    }
-
-    /**
-     * Get servicer performance metrics.
+     * Servicer performance summary.
      */
     public function servicerPerformance(Request $request): JsonResponse
     {
-        try {
-            $startDate = Carbon::parse($request->query('start_date', now()->subDays(30)))->toDateTimeString();
-            $endDate = Carbon::parse($request->query('end_date', now()))->toDateTimeString();
-        } catch (\Exception $e) {
-            $startDate = now()->subDays(30)->toDateTimeString();
-            $endDate = now()->toDateTimeString();
-        }
+        [$startDate, $endDate] = $this->parseDateRange($request);
 
-        $branchId = $request->query('branch_id');
-        $servicerId = $request->query('servicer_id');
-
-        $performance = Feedback::whereBetween('created_at', [$startDate, $endDate])
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
-            ->when($servicerId, fn($q) => $q->where('servicer_id', $servicerId))
+        $rows = Feedback::whereBetween('created_at', [$startDate, $endDate])
+            ->when($request->query('branch_id'),   fn($q) => $q->where('branch_id',   $request->query('branch_id')))
+            ->when($request->query('servicer_id'), fn($q) => $q->where('servicer_id', $request->query('servicer_id')))
             ->with('servicer:id,name')
             ->selectRaw('
                 servicer_id,
-                COUNT(*) as total_feedbacks,
+                COUNT(*) as total,
                 ROUND(AVG(rating), 2) as avg_rating,
                 ROUND(AVG(sentiment_score), 3) as avg_sentiment,
-                COUNT(CASE WHEN rating >= 4 THEN 1 END) as positive_feedbacks,
-                COUNT(CASE WHEN rating <= 2 THEN 1 END) as negative_feedbacks
+                SUM(rating >= 4) as positive_count,
+                SUM(rating <= 2) as negative_count
             ')
             ->groupBy('servicer_id')
-            ->having('total_feedbacks', '>', 0)
+            ->having('total', '>', 0)
             ->orderByDesc('avg_rating')
             ->get()
-            ->map(function ($item) {
-                $total = (int) $item->total_feedbacks;
+            ->map(function ($row) {
+                $total = (int) $row->total;
                 return [
-                    'servicer_id' => $item->servicer_id,
-                    'servicer_name' => $item->servicer->name,
-                    'total_feedbacks' => $total,
-                    'average_rating' => (float) $item->avg_rating,
-                    'average_sentiment' => (float) $item->avg_sentiment,
-                    'positive_percentage' => $total > 0 ? round(($item->positive_feedbacks / $total) * 100, 1) : 0,
-                    'negative_percentage' => $total > 0 ? round(($item->negative_feedbacks / $total) * 100, 1) : 0,
+                    'servicer_id'         => $row->servicer_id,
+                    'servicer_name'       => $row->servicer->name,
+                    'total_feedbacks'     => $total,
+                    'average_rating'      => (float) $row->avg_rating,
+                    'average_sentiment'   => (float) $row->avg_sentiment,
+                    'positive_percentage' => $total ? round(($row->positive_count / $total) * 100, 1) : 0,
+                    'negative_percentage' => $total ? round(($row->negative_count / $total) * 100, 1) : 0,
                 ];
             });
 
-        return response()->json($performance);
+        return response()->json($rows);
     }
 
     /**
-     * Get performance data for a single servicer, including raw feedback entries.
+     * Raw feedback entries for a single servicer.
      */
     public function servicerFeedback(Request $request): JsonResponse
     {
         $servicerId = $request->query('servicer_id');
-        if (!$servicerId) {
+        if (! $servicerId) {
             return response()->json(['error' => 'servicer_id is required'], 422);
         }
 
-        try {
-            $startDate = Carbon::parse($request->query('start_date', now()->subDays(30)))->toDateTimeString();
-            $endDate = Carbon::parse($request->query('end_date', now()))->toDateTimeString();
-        } catch (\Exception $e) {
-            $startDate = now()->subDays(30)->toDateTimeString();
-            $endDate = now()->toDateTimeString();
-        }
+        [$startDate, $endDate] = $this->parseDateRange($request);
 
         $feedbacks = Feedback::where('servicer_id', $servicerId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->with(['counter:id,name,branch_id', 'counter.branch:id,name'])
-            ->orderBy('created_at', 'desc')
+            ->latest()
             ->limit(200)
             ->get()
-            ->map(function ($feedback) {
-                return [
-                    'id' => $feedback->id,
-                    'rating' => $feedback->rating,
-                    'sentiment_label' => $feedback->sentiment_label,
-                    'sentiment_score' => $feedback->sentiment_score,
-                    'comment' => $feedback->comment,
-                    'counter_name' => $feedback->counter?->name ?? 'Unknown',
-                    'branch_name' => $feedback->counter?->branch?->name ?? 'Unknown',
-                    'submitted_at' => $feedback->created_at->format('Y-m-d H:i'),
-                ];
-            });
+            ->map(fn($f) => $this->formatFeedback($f));
 
         return response()->json(['feedbacks' => $feedbacks]);
     }
 
     /**
-     * Get counter performance metrics.
+     * Counter performance summary.
      */
     public function counterPerformance(Request $request): JsonResponse
     {
-        $startDate = $request->query('start_date', now()->subDays(30));
-        $endDate = $request->query('end_date', now());
-        $branchId = $request->query('branch_id');
+        [$startDate, $endDate] = $this->parseDateRange($request);
 
-        $performance = Feedback::whereBetween('created_at', [$startDate, $endDate])
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+        $rows = Feedback::whereBetween('created_at', [$startDate, $endDate])
+            ->when($request->query('branch_id'), fn($q) => $q->where('branch_id', $request->query('branch_id')))
             ->with('counter:id,name')
             ->selectRaw('
                 counter_id,
-                COUNT(*) as total_feedbacks,
+                COUNT(*) as total,
                 ROUND(AVG(rating), 2) as avg_rating,
                 ROUND(AVG(sentiment_score), 3) as avg_sentiment,
-                COUNT(CASE WHEN rating >= 4 THEN 1 END) as positive_feedbacks
+                SUM(rating >= 4) as positive_count
             ')
             ->groupBy('counter_id')
-            ->having('total_feedbacks', '>', 0)
+            ->having('total', '>', 0)
             ->orderByDesc('avg_rating')
             ->get()
-            ->map(function ($item) {
-                $total = (int) $item->total_feedbacks;
+            ->map(function ($row) {
+                $total = (int) $row->total;
                 return [
-                    'counter_id' => $item->counter_id,
-                    'counter_name' => $item->counter->name,
-                    'total_feedbacks' => $total,
-                    'average_rating' => (float) $item->avg_rating,
-                    'average_sentiment' => (float) $item->avg_sentiment,
-                    'positive_percentage' => $total > 0 ? round(($item->positive_feedbacks / $total) * 100, 1) : 0,
+                    'counter_id'          => $row->counter_id,
+                    'counter_name'        => $row->counter->name,
+                    'total_feedbacks'     => $total,
+                    'average_rating'      => (float) $row->avg_rating,
+                    'average_sentiment'   => (float) $row->avg_sentiment,
+                    'positive_percentage' => $total ? round(($row->positive_count / $total) * 100, 1) : 0,
                 ];
             });
 
-        return response()->json($performance);
+        return response()->json($rows);
     }
 
     /**
-     * Get trend analysis over time.
+     * Time-series trend data (daily / weekly / monthly).
      */
     public function trends(Request $request): JsonResponse
     {
-        $period = $request->query('period', 'daily'); // daily, weekly, monthly
-        $startDate = $request->query('start_date', now()->subDays(30));
-        $endDate = $request->query('end_date', now());
-        $branchId = $request->query('branch_id');
+        $period     = in_array($request->query('period'), ['daily','weekly','monthly'])
+            ? $request->query('period')
+            : 'daily';
 
-        $dateFormat = match ($period) {
-            'weekly' => 'DATE_FORMAT(created_at, "%Y-%u")',
-            'monthly' => 'DATE_FORMAT(created_at, "%Y-%m")',
-            default => 'DATE(created_at)',
+        [$startDate, $endDate] = $this->parseDateRange($request);
+
+        $dateExpr = match ($period) {
+            'weekly'  => "DATE_FORMAT(created_at, '%Y-%u')",
+            'monthly' => "DATE_FORMAT(created_at, '%Y-%m')",
+            default   => 'DATE(created_at)',
         };
 
         $trends = Feedback::whereBetween('created_at', [$startDate, $endDate])
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($request->query('branch_id'), fn($q) => $q->where('branch_id', $request->query('branch_id')))
             ->selectRaw("
-                {$dateFormat} as period,
-                COUNT(*) as total_feedbacks,
+                {$dateExpr} as period,
+                COUNT(*) as total,
                 ROUND(AVG(rating), 2) as avg_rating,
                 ROUND(AVG(sentiment_score), 3) as avg_sentiment,
-                COUNT(CASE WHEN rating >= 4 THEN 1 END) as positive_count,
-                COUNT(CASE WHEN rating <= 2 THEN 1 END) as negative_count
+                SUM(rating >= 4) as positive_count,
+                SUM(rating <= 2) as negative_count
             ")
             ->groupBy('period')
             ->orderBy('period')
             ->get()
-            ->map(function ($item) {
-                $total = (int) $item->total_feedbacks;
+            ->map(function ($row) {
+                $total = (int) $row->total;
                 return [
-                    'period' => $item->period,
-                    'total_feedbacks' => $total,
-                    'average_rating' => (float) $item->avg_rating,
-                    'average_sentiment' => (float) $item->avg_sentiment,
-                    'positive_percentage' => $total > 0 ? round(($item->positive_count / $total) * 100, 1) : 0,
-                    'negative_percentage' => $total > 0 ? round(($item->negative_count / $total) * 100, 1) : 0,
+                    'period'              => $row->period,
+                    'total_feedbacks'     => $total,
+                    'average_rating'      => (float) $row->avg_rating,
+                    'average_sentiment'   => (float) $row->avg_sentiment,
+                    'positive_percentage' => $total ? round(($row->positive_count / $total) * 100, 1) : 0,
+                    'negative_percentage' => $total ? round(($row->negative_count / $total) * 100, 1) : 0,
                 ];
             });
 
         return response()->json($trends);
+    }
+
+    // ─── Private Helpers ──────────────────────────────────────────────────────
+
+    /**
+     * Shared feedback DTO used by index() and servicerFeedback().
+     */
+    private function formatFeedback(Feedback $f): array
+    {
+        return [
+            'id'              => $f->id,
+            'rating'          => $f->rating,
+            'sentiment_label' => $f->sentiment_label,
+            'sentiment_score' => $f->sentiment_score,
+            'comment'         => $f->comment,
+            'counter_name'    => $f->counter?->name ?? 'Unknown',
+            'branch_name'     => $f->counter?->branch?->name ?? 'Unknown',
+            'servicer_name'   => $f->servicer?->name ?? 'Unknown',
+            'tags'            => $f->relationLoaded('tags') ? $f->tags->pluck('name')->all() : [],
+            'submitted_at'    => $f->created_at->format('Y-m-d H:i'),
+        ];
+    }
+
+    /**
+     * Parse start/end dates from request with safe fallback.
+     *
+     * @return array{Carbon, Carbon}
+     */
+    private function parseDateRange(Request $request): array
+    {
+        $start = $request->query('start_date');
+        $end   = $request->query('end_date');
+
+        try {
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : now()->subDays(30)->startOfDay();
+            $endDate   = $end   ? Carbon::parse($end)->endOfDay()     : now()->endOfDay();
+        } catch (\Exception) {
+            $startDate = now()->subDays(30)->startOfDay();
+            $endDate   = now()->endOfDay();
+        }
+
+        return [$startDate, $endDate];
+    }
+
+    /**
+     * Sentiment score: combines rating (70%) and tag sentiments (30%).
+     * Returns a clamped float between -1.0 and +1.0.
+     */
+    private function calculateSentimentScore(int $rating, array $tagIds): float
+    {
+        $ratingScore = ($rating - 3) / 2; // 1→-1, 3→0, 5→+1
+
+        $tagScore = 0.0;
+        if (! empty($tagIds)) {
+            $weightMap = ['very_positive' => 0.4, 'positive' => 0.2, 'neutral' => 0.0, 'negative' => -0.2, 'very_negative' => -0.4];
+            $tags      = Tag::whereIn('id', $tagIds)->pluck('sentiment');
+            $tagScore  = $tags->sum(fn($s) => $weightMap[$s] ?? 0) / count($tags);
+        }
+
+        return max(-1.0, min(1.0, $ratingScore * 0.7 + $tagScore * 0.3));
+    }
+
+    /**
+     * Map a numeric sentiment score to a human-readable label.
+     */
+    private function scoreToLabel(float $score): string
+    {
+        return match (true) {
+            $score >= 0.6  => 'very_positive',
+            $score >= 0.2  => 'positive',
+            $score >= -0.2 => 'neutral',
+            $score >= -0.6 => 'negative',
+            default        => 'very_negative',
+        };
+    }
+
+    /**
+     * Standard 401 response for missing/invalid counter token.
+     */
+    private function counterError(): JsonResponse
+    {
+        return response()->json(['error' => 'Invalid or missing counter token'], 401);
     }
 }
