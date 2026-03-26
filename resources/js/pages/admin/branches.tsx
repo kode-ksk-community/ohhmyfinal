@@ -19,7 +19,7 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Head, router, usePage } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
-import AdminLayout from "../Layouts/AdminLayout";
+import AdminLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

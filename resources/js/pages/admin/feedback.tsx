@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Head, router } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
-import AdminLayout from "../Layouts/Adminlayout";
+import AdminLayout from '@/layouts/app-layout';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

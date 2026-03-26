@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Head, Link } from "@inertiajs/react";
 import axios from "axios";
-import AdminLayout from "../Layouts/AdminLayout";
+import AdminLayout from '@/layouts/app-layout';
 import toast, { Toaster } from "react-hot-toast";
 
 type Role = "super_admin" | "admin" | "branch_manager" | "servicer";

@@ -27,7 +27,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Head } from "@inertiajs/react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import AdminLayout from "../Layouts/Adminlayout";
+import AdminLayout from '@/layouts/app-layout';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

@@ -45,7 +45,7 @@ use App\Http\Controllers\AdminDashboardController;
 
 Route::prefix('admin')
     ->name('admin.')
-    ->middleware(['auth', 'can:access_admin_page']) // Only authenticated users with 'admin' or 'super_admin' role can access these routes
+    ->middleware(['auth', 'can:access_branch_manager_page']) // Only authenticated users with 'admin' or 'super_admin' role can access these routes
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 

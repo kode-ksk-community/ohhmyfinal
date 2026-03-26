@@ -22,7 +22,7 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
-import AdminLayout from "../Layouts/AdminLayout";
+import AdminLayout from '@/layouts/app-layout';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
